@@ -1,0 +1,11 @@
+company_id,INT,
+reporting_date,DATE, 
+cash_and_equivalents,DECIMAL(18,2),
+accounts_receivable,DECIMAL(18,2),
+inventory,DECIMAL(18,2),
+short_term_investments,DECIMAL(18,2),
+total_current_assets,DECIMAL(18,2),
+accounts_payable,DECIMAL(18,2),
+short_term_debt,DECIMAL(18,2),
+current_portion_long_term_debt,DECIMAL(18,2), 
+total_current_liabilities,DECIMAL(18,2)

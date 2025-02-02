@@ -1,0 +1,12 @@
+-------------------------------|-------------------------------------|--------------------------------
+balance_sheet                  | (Not directly applicable)          | -
+-------------------------------|-------------------------------------|--------------------------------
+balance_sheet_liabilities      | accounts_payable                     | expense_date = reporting_date (from joined table), expense_category = "Accounts Payable", amount = accounts_payable
+                               | short_term_borrowings                | expense_date = reporting_date, expense_category = "Short-term Borrowings Interest", amount = (calculate interest portion)
+                               | current_maturities_long_term_debt    | expense_date = reporting_date, expense_category = "Long-term Debt Interest", amount = (calculate interest portion)
+                               | other_non_current_liabilities       |  (Requires further analysis to extract relevant expenses) 
+-------------------------------|-------------------------------------|--------------------------------
+income_statement                | cost_of_goods_sold                   | expense_date = reporting_date, expense_category = "Cost of Goods Sold", amount = cost_of_goods_sold
+                               | selling_general_and_admin            | expense_date = reporting_date, expense_category = "Selling, General & Admin", amount = selling_general_and_admin
+                               | depreciation_and_amorti...            | expense_date = reporting_date, expense_category = "Depreciation & Amortization", amount = depreciation_and_amorti...
+                               | other_income_expense                |  (May need to be split into income and expense components)

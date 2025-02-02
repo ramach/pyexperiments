@@ -1,0 +1,22 @@
+Source Columns (income_statement)  | Target Column (income_statement)
+-----------------------------------|----------------------------------
+sales                               | total_revenue
+cost_of_goods                       | cost_of_goods_sold
+gross_profit                        | gross_profit
+selling_administrative_…            | selling_general_and_admin
+income_after_depreciati…            | (Not directly mapped, but can be used to derive operating_income)
+non_operating_income                | other_income_expense (if it includes non-operating expenses as well)
+interest_expense                    | other_income_expense (as a negative component)
+pretax_income                       | income_before_taxes
+income_taxes                        | income_tax_expense
+minority_interest                   | (Not directly mapped, but may be relevant for some analyses)
+investment_gains                    | other_income_expense 
+other_income                        | other_income_expense
+income_from_continuing_…            | (Not directly mapped, but can be useful for LLM context in some cases)
+extras_and_discontinued…            | (Not directly mapped, but can be useful for LLM context in some cases)
+net_income                          | net_income
+income_before_depreciat…            | (Not directly mapped, but can be used to derive depreciation_and_amorti...)
+depreciation_and_amorti…            | depreciation_and_amorti... 
+average_shares                      | (Not directly mapped, but useful for per-share calculations)
+diluted_eps_before_non_…            | (Not directly mapped)
+diluted_net_eps                     | (Not directly mapped, but useful for LLM context) 

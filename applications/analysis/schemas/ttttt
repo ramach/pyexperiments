@@ -1,0 +1,6 @@
+Working_Capital = total_current_assets - total_current_liabilities 
+Current_Ratio = total_current_assets / total_current_liabilities
+Quick_Ratio = (total_current_assets - inventories) / total_current_liabilities
+Cash_Ratio = cash_and_equivalents / total_current_liabilities 
+Operating_Cash_Flow_Ratio = net_cash_from_operating_activities / total_current_liabilities
+Cash_Flow_to_Revenue_Ratio = net_cash_from_operating_activities / net_income 

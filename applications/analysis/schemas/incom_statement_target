@@ -1,0 +1,21 @@
+company_id INT,
+reporting_date DATE,
+-- Revenue
+total_revenue DECIMAL(18,2),
+-- Cost of Goods Sold
+cost_of_goods_sold DECIMAL(18,2),
+-- Gross Profit
+gross_profit DECIMAL(18,2),
+-- Operating Expenses
+research_and_development DECIMAL(18,2),
+selling_general_and_admin DECIMAL(18,2),
+-- Operating Income (EBIT)
+operating_income DECIMAL(18,2),
+-- Other Income/Expenses
+other_income_expense DECIMAL(18,2),
+-- Income Before Taxes (EBT)
+income_before_taxes DECIMAL(18,2),
+-- Income Tax Expense
+income_tax_expense DECIMAL(18,2),
+-- Net Income
+net_income DECIMAL(18,2)

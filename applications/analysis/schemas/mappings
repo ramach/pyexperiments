@@ -1,0 +1,30 @@
+```
+Source Tables                  | Source Columns                      | Target Column (balance_sheet)
+-------------------------------|-------------------------------------|--------------------------------
+balance_sheet_assets           | cash_and_equivalents                 | cash_and_equivalents
+                               | receivables                         | accounts_receivable 
+                               | notes_receivable                    | accounts_receivable (if applicable)
+                               | inventories                         | inventory
+                               | other_current_assets                 | Include in `total_current_assets` calculation
+                               | total_current_assets                 | total_current_assets
+-------------------------------|-------------------------------------|--------------------------------
+balance_sheet_liabilities      | accounts_payable                     | accounts_payable
+                               | short_term_borrowings                | short_term_debt
+                               | current_maturities_long_term_debt    | current_portion_long_term_debt
+                               | total_current_liabilities             | total_current_liabilities
+                               | long_term_debt                      | (Not directly mapped, but useful for LLM context)
+                               | other_non_current_liabilities       | (Not directly mapped, but useful for LLM context)
+                               | total_liabilities                   | (Not directly mapped, but useful for LLM context) 
+-------------------------------|-------------------------------------|--------------------------------
+cash_flow_statement            | net_income                           | (Not directly mapped, but useful for LLM context)
+                               | depreciation_amortizati…            | (Not directly mapped, but useful for LLM context)
+                               | net_cash_from_operating…            | (Not directly mapped, but provides context for LLM)
+                               | investments                         | (Potentially map to `short_term_investments` if they are short-term and liquid)
+                               | net_cash_from_investing…            | (Not directly mapped, but provides context for LLM)
+                               | increase_short_term_deb…            | (Not directly mapped, but can be useful for LLM analysis of debt changes)
+                               | net_cash_from_financing…            | (Not directly mapped, but provides context for LLM)
+                               | cash_at_beginning_of_pe…            | (Not directly mapped, but provides context for LLM)
+                               | cash_at_end_of_period               | cash_and_equivalents (if this represents the same accounting period as the balance sheet)
+                               | diluted_net_eps                     | (Not directly mapped, but useful for LLM context)
+```
+
