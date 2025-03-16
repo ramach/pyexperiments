@@ -9,9 +9,9 @@ from langchain_community.chat_models import ChatOpenAI
 from langchain.agents import initialize_agent, Tool
 from langchain.agents import AgentType
 import os
-
 def create_fintech_analyst2(df):
-    os.environ["OPENAI_API_KEY"] = "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"
+    os.environ["OPENAI_API_KEY"] = ""
+
     # 1. Load financial data (replace with your actual data sources)
     # Convert DataFrame rows to Document objects
     documents = [Document(text=str(row)) for index, row in df.iterrows()]

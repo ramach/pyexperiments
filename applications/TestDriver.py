@@ -7,7 +7,7 @@ from langchain.agents import AgentType
 import os
 
 def create_fintech_analyst2(df):
-    os.environ["OPENAI_API_KEY"] = "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"
+    os.environ["OPENAI_API_KEY"] = ""
     # 1. Load financial data (replace with your actual data sources)
     # Convert DataFrame rows to Document objects
     documents = [Document(text=str(row)) for index, row in df.iterrows()]
@@ -77,6 +77,9 @@ def main():
         "How has the company's cash flow changed over the past year?",
         "What are the key liquidity risks facing the company?",
         "Can you provide a summary of the company's financial performance?",
+        "How has the company's liquidity position changed over this period?",
+        "Are there any concerning trends?",
+        "What recommendations can you provide for improving liquidity management?",
     ]
     # Get answers from the agent
     for prompt in prompts:

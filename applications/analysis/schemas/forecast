@@ -1,0 +1,8 @@
+product_type, VARCHAR(50)
+region, VARCHAR(50)
+volume, INT
+
+#sample
+iphone, india, 1000000
+iphone, china, 500000
+iphone, us, 800000
