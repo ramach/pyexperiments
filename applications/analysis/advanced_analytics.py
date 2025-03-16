@@ -373,8 +373,11 @@ def liquidity_analysis(url, domain_filter=None):
 
 # Or, for Colab / temporary use:
 # from google.colab import userdata
+<<<<<<< HEAD
 # OPENAI_API_KEY = userdata.get('OPENAI_API_KEY')
+=======
 
+>>>>>>> 8312e81 (preliminary commit)
 # 2. Create the LangChain Tool
 def analyze_liquidity_wrapper(company_symbol: str) -> list[BaseNode]:
     """
