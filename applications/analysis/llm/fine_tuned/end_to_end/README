@@ -1,0 +1,7 @@
+.
+├── .env                  # Stores API keys
+├── config.py             # Configuration constants, API key loading
+├── fine_tuning_logic.py  # Functions for the fine-tuning process
+├── assistant_logic.py    # Functions for the liquidity assistant agent/tools
+├── main_driver.py        # Main script to run actions (fine-tune or assist)
+└── fine_tuned_model_id.txt # (Optional) Stores the last successful fine-tuned model ID
