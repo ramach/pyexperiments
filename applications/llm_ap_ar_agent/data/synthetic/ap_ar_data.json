@@ -1,0 +1,34 @@
+{
+  "accounts_payable": [
+    {
+      "vendor": "Acme Supplies",
+      "invoice_id": "INV-1001",
+      "amount": 1500.75,
+      "due_date": "2025-04-20",
+      "status": "unpaid"
+    },
+    {
+      "vendor": "OfficePro",
+      "invoice_id": "INV-1002",
+      "amount": 875.00,
+      "due_date": "2025-03-30",
+      "status": "paid"
+    }
+  ],
+  "accounts_receivable": [
+    {
+      "customer": "Globex Corp",
+      "invoice_id": "AR-2001",
+      "amount_due": 3200.00,
+      "due_date": "2025-04-15",
+      "status": "pending"
+    },
+    {
+      "customer": "Initech",
+      "invoice_id": "AR-2002",
+      "amount_due": 4500.00,
+      "due_date": "2025-03-10",
+      "status": "overdue"
+    }
+  ]
+}

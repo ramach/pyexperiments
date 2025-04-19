@@ -1,0 +1,14 @@
+[
+  {
+    "vendor": "Acme Supplies",
+    "invoice_id": "INV-AP-1001",
+    "amount": 2350.75,
+    "due_date": "2025-04-15"
+  },
+  {
+    "vendor": "LogiTech Ware",
+    "invoice_id": "INV-AP-1002",
+    "amount": 4290.00,
+    "due_date": "2025-04-20"
+  }
+]

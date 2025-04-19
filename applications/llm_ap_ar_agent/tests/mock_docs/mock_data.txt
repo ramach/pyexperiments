@@ -1,0 +1,5 @@
+Invoice A: Payment due by April 20, 2025.
+Invoice B: Payment received March 15, 2025.
+Customer X owes $5,000 pending clearance.
+Customer Y paid in full.
+Vendor Z website: https://vendorz.com/about

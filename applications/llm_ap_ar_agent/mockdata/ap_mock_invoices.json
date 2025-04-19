@@ -1,0 +1,20 @@
+[
+  {
+    "vendor": "Acme Supplies",
+    "invoice_id": "INV-AP-1001",
+    "amount": 2350.75,
+    "date":"2025-03-15",
+    "due_date":"2025-04-15",
+    "purchase_order":"PO-7788",
+    "payment_method":"bank_transfer"
+  },
+  {
+    "vendor": "LogiTech Ware",
+    "invoice_id": "INV-AP-1002",
+    "amount": 4290.00,
+    "date":"2025-04-15",
+    "due_date":"2025-04-20",
+    "purchase_order":"PO-7789",
+   "payment_method":"bank_transfer"
+  }
+]
