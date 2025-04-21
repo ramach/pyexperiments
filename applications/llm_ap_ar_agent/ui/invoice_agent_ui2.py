@@ -1,8 +1,8 @@
 import streamlit as st
 import os
 import sys
-
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import sqlite3
 import json
 import re
@@ -22,6 +22,8 @@ from tools.openai_functions.ar_tools import run_ar_chain_with_function_calling
 from retrievers.serpapi_scraper import run_serpapi_scraper
 from tools.query_vector_qa import query_vector_similarity_search, seed_faiss_index_if_needed, \
     load_documents_into_vector_store
+from utils.pdf_utils import extract_text_from_pdf
+from utils.pdf_utils import extract_text_from_image
 
 load_dotenv()
 
