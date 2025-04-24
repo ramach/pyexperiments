@@ -16,14 +16,13 @@ from PIL import Image
 import pytesseract
 from langchain.vectorstores import FAISS
 from langchain.embeddings import OpenAIEmbeddings
+from agents.llm_invoice_agent import map_extracted_text_to_invoice_data
 from agents.invoice_agent import run_invoice_agent_with_function_calling
 from tools.openai_functions.ap_tools import run_ap_chain_with_function_calling
 from tools.openai_functions.ar_tools import run_ar_chain_with_function_calling
 from retrievers.serpapi_scraper import run_serpapi_scraper
 from tools.query_vector_qa import query_vector_similarity_search, seed_faiss_index_if_needed, \
     load_documents_into_vector_store
-from utils.pdf_utils import extract_text_from_pdf
-from utils.pdf_utils import extract_text_from_image
 
 load_dotenv()
 
@@ -105,6 +104,10 @@ elif uploaded_image:
     extracted_text = pytesseract.image_to_string(image)
     st.text_area("🖼️ Extracted Text from Image", extracted_text, height=200)
     load_documents_into_vector_store([{"text": extracted_text, "source": uploaded_image.name}])
+    #map extracted data to invoice json
+    mapped_data = map_extracted_text_to_invoice_data(extracted_text)
+    st.markdown("### 🧠 Mapped Fields from Image")
+    st.json(mapped_data.get("invoice_details", mapped_data))
 
 # Handle mock JSON
 elif mock_data_file:
@@ -169,7 +172,7 @@ def extract_fields_from_text(text):
 
 if extracted_text:
     guessed_fields = extract_fields_from_text(extracted_text)
-    st.markdown("### 🧠 Auto-extracted Fields")
+    st.markdown("### 🧠 Guessed Fields")
     st.json(guessed_fields)
 
 # Invoice form

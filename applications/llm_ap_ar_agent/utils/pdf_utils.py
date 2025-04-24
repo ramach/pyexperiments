@@ -1,10 +1,13 @@
+import io
+
 import fitz  # PyMuPDF
 import pytesseract
 from PIL import Image
 from pdf2image import convert_from_path
-import os
 import logging
 import pdfplumber
+
+#from paddleocr import PaddleOCR
 
 logger = logging.getLogger(__name__)
 
@@ -89,12 +92,29 @@ def extract_text_from_image(image_path: str) -> str:
     Returns:
         str: Extracted text as a string.
     """
-    if not os.path.exists(image_path):
-        raise FileNotFoundError(f"Image not found: {image_path}")
-
     try:
         image = Image.open(image_path)
         text = pytesseract.image_to_string(image)
         return text.strip()
     except Exception as e:
         raise RuntimeError(f"Failed to extract text from image: {e}")
+
+def extract_text_from_image_updated(image_file) -> str:
+    """
+    Works for both UploadFile (Streamlit) or file‑path strings
+    """
+    try:
+        # Handle an UploadFile or BytesIO
+        if hasattr(image_file, "read"):
+            img = Image.open(io.BytesIO(image_file.read()))
+        else:                           # plain path
+            img = Image.open(image_file)
+
+        text = pytesseract.image_to_string(img)
+        return text.strip()
+    except Exception as e:
+        return f"[OCR‑ERROR] {e}"
+#paddleOCR - causes package conflicts - no longer recommended
+'''
+
+'''

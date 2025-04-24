@@ -1,10 +1,3 @@
-
-import os
-import sys
-from typing import Tuple, Dict
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from langchain.chains import LLMChain
 from langchain.chat_models import ChatOpenAI
 from langchain.agents import initialize_agent, AgentType
@@ -59,10 +52,9 @@ class InvoiceData(BaseModel):
     invoice_id: str
     vendor: str
     date: str
-    amount: float
+    amount: str
     purchase_order: str
     payment_method: str
-    extracted_text: str
 
 # Create the invoice extraction prompt
 invoice_extraction_prompt = PromptTemplate(
@@ -97,7 +89,7 @@ def map_extracted_text_to_invoice_data_with_confidence_score(extracted_text: str
     model_schema = {"invoice_id", "vendor", "amount", "date", "purchase_order", "payment_method"}
     prompt_template =PromptTemplate(
         input_variables=["extracted_text"],
-        template = """ ou are an AI assistant designed to extract structured invoice data from raw extracted text.
+        template = """ you are an AI assistant designed to extract structured invoice data from raw extracted text.
          Please parse the following extracted text and output the details in JSON format with "value" and "confidence" (0.0 to 1.0) for each field:
          
          Extracted Text:
@@ -110,6 +102,8 @@ def map_extracted_text_to_invoice_data_with_confidence_score(extracted_text: str
          - amount
          - purchase_order
          - payment_method
+         - line_items
+         if the vendor name is missing use business_id or client id.
          If a field is not present, say "MISSING". Return a JSON object.
          
          """)
@@ -149,18 +143,17 @@ def run_llm_invoice_agent(query: str, extracted_text: str) -> str:
     The agent maps the extracted text to structured data and runs the query through the tools.
     """
     # evaluate mapping confidence
-    mapped_data = map_extracted_text_to_invoice_data_with_confidence_score(extracted_text)
+    mapped_data_with_confidence_score= map_extracted_text_to_invoice_data_with_confidence_score(extracted_text)
 
-    logger.debug("mapped invoice data %s", mapped_data)
+    logger.debug("mapped invoice data %s", mapped_data_with_confidence_score)
 
     # Map the extracted text to structured data
-    input_data = map_extracted_text_to_invoice_data(extracted_text)
-    logger.debug("[InvoiceAgent] mapped_text: %s", input_data)
-
+    mapped_data = map_extracted_text_to_invoice_data(extracted_text)
+    logger.debug("[InvoiceAgent] mapped_text: %s", mapped_data)
+    validated = InvoiceData(**mapped_data)
     # Log the structured data to verify
-    print("Mapped structured data:", input_data)
+    print("Mapped structured data:", json.dumps(validated.dict()))
     # Proceed with handling the query (you can add more tool calls here)
     agent = get_invoice_agent()
-    result = agent.run(f"{query} from {json.dumps(input_data)}")
+    result = agent.run(f"Verify invoice from {json.dumps(validated.dict())}")
     return result
-

@@ -5,6 +5,7 @@ import re
 def run_invoice_verification(invoice_data):
     try:
         if isinstance(invoice_data, str):
+            print( f"printing invoice_id in run_invoice_verification {invoice_data}")
             invoice_data = json.loads(invoice_data)
 
         required_fields = ["invoice_id", "vendor", "amount", "date"]
