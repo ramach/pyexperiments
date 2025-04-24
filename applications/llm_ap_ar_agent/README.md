@@ -97,3 +97,76 @@ pydantic<2.0           # Avoid Pydantic v2 unless LangChain fully supports it
 sentence-transformers
 
 ```
+
+```mermaid
+graph TD
+    Start(Start AP Process)
+
+    subgraph Stage 1: Invoice Receipt & Capture
+        S1_Receive[Receive Vendor Invoice ⚙️<br/>Hook: PreCapture Validation]
+        S1_Digitize[Digitize & Extract Data PO# ⚙️<br/>Hooks: PostCapture Enrich,<br/>Duplicate Check]
+    end
+
+    subgraph Stage 2: Validation & Matching
+        S2_Retrieve[Retrieve PO & GRN/Svc Accpt ⚙️<br/>Hook: PreMatch Validation]
+        S2_Match{Perform 3-Way Match?<br/> ⚙️ Hook: Match Tolerance Rules}
+    end
+
+    subgraph Stage 3: Exception Handling
+        S3_Identify[Identify Match Discrepancy]
+        S3_Route[Route for Resolution ⚙️<br/>Hooks: Exception Routing,<br/>Escalation]
+        S3_Document[Document Resolution]
+    end
+
+    subgraph Stage 4: Approval
+        S4_RouteApproval[Route for Formal Approval ⚙️<br/>Hooks: Approval Matrix,<br/>PreApproval Budget Check]
+        S4_Decision{Invoice Approved?}
+        S4_Reject[Address Rejection Reason]
+    end
+
+    subgraph Stage 5: Coding & Posting
+        S5_Code[Assign/Confirm GL Codes ⚙️<br/>Hook: GLCoding Validation]
+        S5_Post[Post Invoice to Ledgers ⚙️<br/>Hook: PrePosting Compliance Check]
+    end
+
+    subgraph Stage 6: Payment Processing
+        S6_Select[Select Invoices for Payment ⚙️<br/>Hook: Payment Selection Rules]
+        S6_Authorize[Authorize Payment Batch ⚙️<br/>Hook: Payment Batch Approval]
+        S6_Execute[Execute Payment ⚙️<br/>Hook: PrePayment Fraud Check]
+        S6_Record[Record Payment & Send Remittance ⚙️<br/>Hook: PostPayment Notification]
+    end
+
+    subgraph Stage 7: Archiving
+        S7_Archive[File/Archive Documents ⚙️<br/>Hook: Archive Metadata Tagging]
+    end
+
+    End(End AP Process)
+
+    %% Workflow Connections
+    Start --> S1_Receive
+    S1_Receive --> S1_Digitize
+    S1_Digitize --> S2_Retrieve
+    S2_Retrieve --> S2_Match
+
+    S2_Match -- No --> S3_Identify
+    S3_Identify --> S3_Route
+    S3_Route --> S3_Document
+    %% Loop back for re-validation
+    S3_Document --> S2_Retrieve
+
+    S2_Match -- Yes --> S4_RouteApproval
+    S4_RouteApproval --> S4_Decision
+
+    S4_Decision -- No --> S4_Reject
+    %% Loop back for rework/exception
+    S4_Reject --> S3_Identify 
+
+    S4_Decision -- Yes ⚙️<br/>Hook: PostApproval Notification --> S5_Code
+    S5_Code --> S5_Post
+    S5_Post --> S6_Select
+    S6_Select --> S6_Authorize
+    S6_Authorize --> S6_Execute
+    S6_Execute --> S6_Record
+    S6_Record --> S7_Archive
+    S7_Archive --> End
+```
