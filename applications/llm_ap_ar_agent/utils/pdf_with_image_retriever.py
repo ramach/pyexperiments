@@ -9,7 +9,7 @@
 # - Linux (Debian/Ubuntu): sudo apt update && sudo apt install tesseract-ocr
 # - Linux (Fedora): sudo dnf install tesseract
 # You might need to configure the path to tesseract executable below.
-'''
+"""
 This document provides several functions:
 
 extract_text_with_pymupdf: Uses the fast PyMuPDF library to get standard text.
@@ -17,7 +17,7 @@ extract_text_with_pypdf: Uses the pypdf library for standard text extraction.
 extract_text_with_pdfminer: Uses pdfminer.six, which is good for analyzing text layout.
 extract_text_with_ocr: Uses PyMuPDF to find and extract images and then uses pytesseract to perform Optical Character Recognition (OCR) on those images, combining the results with any standard text found.
 
-'''
+"""
 import fitz  # PyMuPDF library is imported as 'fitz'
 from pypdf import PdfReader
 from io import StringIO

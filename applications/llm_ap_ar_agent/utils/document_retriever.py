@@ -1,6 +1,13 @@
 from docx import Document
 import re
 
+def extract_text_from_docx(docx_file) -> str:
+    try:
+        document = Document(docx_file) if hasattr(docx_file, "read") else Document(str(docx_file))
+        return "\n".join([para.text for para in document.paragraphs])
+    except Exception as e:
+        return f"Error: {e}"
+
 def extract_invoice_data_from_docx(docx_file) -> dict:
     """
     Extract invoice-related data from a Word (.docx) document.

@@ -135,6 +135,35 @@ def map_extracted_text_to_invoice_data(extracted_text: str) -> dict:
         print(f"Error in mapping extracted text: {e}")
         return {}
 
+def map_docx_text_to_invoice_data(extracted_text: str) -> dict:
+    """
+    Use LLM to map extracted text to structured invoice fields.
+    """
+    prompt_template = f"""
+You are a helpful assistant that extracts invoice details from text.
+
+Extract and return the following as JSON:
+- invoice_id
+- date
+- vendor
+- amount
+If any field is missing, return an empty string for that field.
+
+Text:
+\"\"\"
+{extracted_text}
+\"\"\"
+"""
+
+    # Use your LLM call here (OpenAI, Anthropic, etc.)
+    chain = LLMChain(llm=llm, prompt=prompt_template)
+    response = llm_chain.run(extracted_text)  # <- replace with your function
+    try:
+        return json.loads(response)
+    except Exception as e:
+        return {"error": f"Failed to parse LLM response: {e}", "llm_output": response}
+
+
 # Now define the main function for the invoice agent
 def run_llm_invoice_agent(query: str, extracted_text: str) -> str:
     logger.debug("[InvoiceAgent] extracted_text: %s", extracted_text)
