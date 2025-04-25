@@ -103,3 +103,16 @@ DEBUG:agents.llm_invoice_agent:[InvoiceAgent_mapping_with_confidence]
 ```
 
 Sample data for agent execution is available under mockdata
+
+```text
+Support for docx
+Mapping is enabled for word documents
+
+Detect if file is .docx.
+
+Extract raw text using extract_text_from_docx.
+
+Map using map_docx_text_to_invoice_data.
+
+Then pass to your unified run_llm_invoice_agent(query, input_data) function.
+```
