@@ -1,5 +1,9 @@
-from docx import Document
+import json
 import re
+from docx import Document
+from typing import List, Dict, Optional
+import openai
+
 
 def extract_text_from_docx(docx_file) -> str:
     try:
@@ -35,9 +39,114 @@ def extract_invoice_data_from_docx(docx_file) -> dict:
 
     return invoice_data
 
+# utils/business_rules.py
+
+def extract_business_rules_from_docx(file_path: str) -> List[Dict[str, str]]:
+    doc = Document(file_path)
+    rules = []
+    rule_number = 1
+
+    for para in doc.paragraphs:
+        text = para.text.strip()
+        if not text:
+            continue
+        if para.style.name in ["List Number", "Heading 2", "Normal"]:
+            if text.lower().startswith("rule") or text[:2].isdigit():
+                rules.append({
+                    "rule_number": f"Rule {rule_number}",
+                    "description": text
+                })
+                rule_number += 1
+
+    for table in doc.tables:
+        for row in table.rows:
+            cells = row.cells
+            if len(cells) >= 2:
+                rule_text = cells[1].text.strip()
+                if rule_text:
+                    rules.append({
+                        "rule_number": cells[0].text.strip() or f"Rule {rule_number}",
+                        "description": rule_text
+                    })
+                    rule_number += 1
+
+    return rules
+
+
+def extract_business_rules_from_docx_with_confidence_score(file_path: str, llm_model=None) -> List[Dict[str, str]]:
+    """
+    Extracts business rules from a .docx file, including both paragraphs and tables.
+    Optionally uses LLM to assign confidence scores.
+
+    Args:
+        file_path (str): Path to the .docx file.
+        llm_model: Optional LLM model to assign confidence scores.
+
+    Returns:
+        List[Dict[str, str]]: Extracted rules with optional confidence.
+    """
+    doc = Document(file_path)
+    rules = []
+    rule_number = 1
+
+    # Extract from paragraphs
+    for para in doc.paragraphs:
+        text = para.text.strip()
+        if not text:
+            continue
+
+        if para.style.name in ["List Number", "Heading 2", "Normal"]:
+            if text.lower().startswith("rule") or text[:2].isdigit():
+                rule = {
+                    "rule_number": f"Rule {rule_number}",
+                    "description": text
+                }
+                if llm_model:
+                    rule["confidence"] = get_confidence_score_llm(llm_model, text)
+                rules.append(rule)
+                rule_number += 1
+
+    # Extract from tables
+    for table in doc.tables:
+        for row in table.rows:
+            cells = row.cells
+            if len(cells) >= 2:
+                rule_text = cells[1].text.strip()
+                if rule_text:
+                    rule = {
+                        "rule_number": cells[0].text.strip() or f"Rule {rule_number}",
+                        "description": rule_text
+                    }
+                    if llm_model:
+                        rule["confidence"] = get_confidence_score_llm(llm_model, rule_text)
+                    rules.append(rule)
+                    rule_number += 1
+
+    return rules
 
 def _extract_field(text: str, pattern: str) -> str:
     match = re.search(pattern, text, re.IGNORECASE)
     if match:
         return match.group(len(match.groups()))
     return ""
+
+def get_confidence_score_llm(llm_model, rule_text: str) -> str:
+    """
+    Placeholder function for confidence score using an LLM.
+
+    Args:
+        llm_model: An LLM model or chain
+        rule_text: The text of the rule
+
+    Returns:
+        A string confidence score, e.g. '92%'
+    """
+    # Example only — replace with real model call
+    response = llm_model.predict(f"What is the confidence that this is a valid business rule? \"{rule_text}\"")
+    return response.strip()  # Should return '95%' or similar
+
+def extract_business_rules_from_docx_basic(file_path: str) -> list[str]:
+    doc = Document(file_path)
+    return [para.text.strip() for para in doc.paragraphs if para.text.strip()]
+
+
