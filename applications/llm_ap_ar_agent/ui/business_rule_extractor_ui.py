@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from utils.document_retriever import extract_business_rules_from_docx_basic
+
 load_dotenv()
 
 from io import BytesIO
