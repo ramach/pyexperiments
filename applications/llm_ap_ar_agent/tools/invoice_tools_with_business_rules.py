@@ -1,9 +1,8 @@
 from langchain.tools import Tool
 import json
 
-def invoice_verification(json_string: str) -> str:
-    data = json.loads(json_string)
-    invoice = data.get("invoice", {})
+def invoice_verification(input_data: dict) -> str:
+    invoice = input_data.get("invoice_and_PO_details", {})
     issues = []
 
     if not invoice.get("invoice_id"):
@@ -21,17 +20,10 @@ invoice_verification_tool = Tool(
     description="Verify invoice fields like ID, vendor, amount."
 )
 
-def po_validation(json_string: str) -> str:
-    data = json.loads(json_string)
-    invoice = data.get("invoice", {})
-    po = data.get("purchase_order", {})
-
-    if invoice.get("po_id") != po.get("po_id"):
-        return "PO ID mismatch."
-
-    if invoice.get("total") != po.get("total"):
-        return "Invoice total doesn't match PO total."
-
+def po_validation(input_data: dict) -> str:
+    invoice = input_data.get("invoice_and_PO_details", {})
+    if invoice.get("purchase_order") is None:
+        return "Purchase order missing."
     return "Purchase order validated successfully."
 
 po_validation_tool = Tool(
@@ -40,8 +32,8 @@ po_validation_tool = Tool(
     description="Validate invoice details against purchase order."
 )
 
-def approval_process(json_string: str) -> str:
-    data = json.loads(json_string)
+def approval_process(input_data: dict) -> str:
+    data = input_data.get("invoice_and_PO_details", {})
     invoice = data.get("invoice", {})
     rules = data.get("business_rules", {})
 
@@ -58,10 +50,10 @@ approval_process_tool = Tool(
     description="Check if invoice requires approval based on business rules."
 )
 
-def payment_processing(json_string: str) -> str:
-    data = json.loads(json_string)
-    invoice = data.get("invoice", {})
-    rules = data.get("business_rules", {})
+def payment_processing(input_data: dict) -> str:
+    input_data.get("invoice_and_PO_details", {})
+    invoice = input_data.get("invoice", {})
+    rules = input_data.get("business_rules", {})
 
     payment_terms = rules.get("preferred_payment_terms", "Net 30")
     return f"Scheduled payment for invoice {invoice.get('invoice_id')} using terms {payment_terms}."

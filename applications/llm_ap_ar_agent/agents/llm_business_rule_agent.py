@@ -8,6 +8,7 @@ You are a document analyst. Analyze the rule below and return structured JSON wi
 - description (plain summary)
 - condition (if any)
 - action (what to do)
+- approval_threshold
 - confidence (as percentage from 0–100)
 
 Rule:

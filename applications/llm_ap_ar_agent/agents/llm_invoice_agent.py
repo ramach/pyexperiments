@@ -100,7 +100,40 @@ def map_extracted_text_to_invoice_data_with_confidence_score(extracted_text: str
          - vendor
          - date
          - amount
-         - purchase_order
+         - payment_method
+         - line_items
+         if the vendor name is missing use business_id or client id.
+         If a field is not present, say "MISSING". Return a JSON object.
+         
+         """)
+
+    chain = LLMChain(llm=llm, prompt=prompt_template)
+
+    try:
+        response = chain.run(extracted_text)
+        data = json.loads(response)
+        logger.debug("[InvoiceAgent_mapping_with_confidence] structured_data: %s", data)
+    except Exception as e:
+        print(f"Error in mapping extracted text: {e}")
+        return {}
+
+    return data
+
+def map_extracted_text_to_po_data_with_confidence_score(extracted_text: str) -> dict:
+    model_schema = {"invoice_id", "vendor", "amount", "date", "purchase_order", "payment_method"}
+    prompt_template = PromptTemplate(
+        input_variables=["extracted_text"],
+        template = """ you are an AI assistant designed to extract structured purchase data from raw extracted text.
+         Please parse the following extracted text and output the details in JSON format with "value" and "confidence" (0.0 to 1.0) for each field:
+         
+         Extracted Text:
+         {extracted_text}
+         
+         The output should include:
+         - customer
+         - date
+         - amount
+         - purchase_order_id
          - payment_method
          - line_items
          if the vendor name is missing use business_id or client id.
@@ -122,38 +155,29 @@ def map_extracted_text_to_invoice_data_with_confidence_score(extracted_text: str
 
 def map_extracted_text_to_invoice_data(extracted_text: str) -> dict:
     """
-    Maps the extracted text from the invoice to a structured data model.
-    Uses an LLM to parse and return a structured JSON object.
-    """
-    try:
-        # Pass the extracted text to the LLM chain to extract structured data
-        structured_data = llm_chain.run(extracted_text)
-        logger.debug("[InvoiceAgent_mapping] structured_data: %s", structured_data)
-        # If the response is in string format, try to parse it into JSON
-        return json.loads(structured_data)  # Convert LLM output (assumed to be in JSON) to dictionary
-    except Exception as e:
-        print(f"Error in mapping extracted text: {e}")
-        return {}
-
-def map_docx_text_to_invoice_data(extracted_text: str) -> dict:
-    """
     Use LLM to map extracted text to structured invoice fields.
     """
-    prompt_template = f"""
-You are a helpful assistant that extracts invoice details from text.
-
-Extract and return the following as JSON:
-- invoice_id
-- date
-- vendor
-- amount
-If any field is missing, return an empty string for that field.
-
-Text:
-\"\"\"
-{extracted_text}
-\"\"\"
-"""
+    prompt_template = PromptTemplate(
+        input_variables=["extracted_text"],
+        template = """ you are an AI assistant designed to extract structured purchase data from raw extracted text.
+         Please parse the following extracted text and output the details in JSON format with "value" and "confidence" (0.0 to 1.0) for each field:
+         
+         Extracted Text:
+         {extracted_text}
+         
+         The output should include:
+         - vendor
+         - invoice_id
+         - date
+         - amount
+         - purchase_order
+         - purchase_order_amount
+         - payment_method
+         - line_items
+         if the vendor name is missing use business_id or client id.
+         If a field is not present, say "MISSING". Return a JSON object.
+         
+         """)
 
     # Use your LLM call here (OpenAI, Anthropic, etc.)
     chain = LLMChain(llm=llm, prompt=prompt_template)

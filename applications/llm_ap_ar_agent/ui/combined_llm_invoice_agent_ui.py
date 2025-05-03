@@ -11,7 +11,8 @@ from utils.text_extraction import extract_text_from_pdf
 from utils.text_extraction import extract_text_from_image
 from utils.text_extraction import extract_business_rules_from_docx
 from agents.llm_business_rule_agent import map_rule_text_to_structured
-from agents.llm_invoice_agent import map_extracted_text_to_invoice_data_with_confidence_score
+from agents.llm_invoice_agent import map_extracted_text_to_invoice_data_with_confidence_score, map_extracted_text_to_invoice_data
+from agents.combined_invoice_processing_with_business_rule import run_llm_invoice_agent
 
 load_dotenv()
 
@@ -30,7 +31,7 @@ query = st.selectbox("Choose a query", [
 ])
 
 if st.button("Run Invoice Agent"):
-    invoice_text, po_text, mapped_data, rules_data = {}, {}, {}, {}
+    invoice_text, po_text, mapped_data, mapped_data_without_score, rules_data = {}, {}, {}, {}, {}
 
     # 1. Extract + Map Invoice
     if invoice_file:
@@ -48,8 +49,9 @@ if st.button("Run Invoice Agent"):
     if invoice_text and po_text:
         combined_text = invoice_text + "\n\n" + po_text
         mapped_data = map_extracted_text_to_invoice_data_with_confidence_score(combined_text)
-        st.subheader("Mapped Invoice + PO data")
-        st.json(mapped_data.get("invoice_details", mapped_data))
+        mapped_data_without_score = map_extracted_text_to_invoice_data(combined_text)
+    st.subheader("Mapped Invoice + PO data")
+    st.json(mapped_data.get("invoice_details", mapped_data))
     # 3. Extract Business Rules
     rules = []
     if rules_file:
@@ -76,13 +78,22 @@ if st.button("Run Invoice Agent"):
             st.download_button("📥 Download Mapped Rules (JSON)", data=json_bytes, file_name="mapped_business_rules.json", mime="application/json")
         # 4. Combine rules and invoice_PO
         combined_input = {
-            "invoice_and_PO": mapped_data,
+            "invoice_and_PO_details_with_confidence": mapped_data,
             "business_rules": mapped_rules
         }
         # 5. Show Combined Data
         st.subheader("Combined Mapped Input")
         st.json(combined_input)
-
-    # 6. Run Agent Chain
-    # TODO
+        # remove confidence score while passing to agent
+        combined_input_without_score = {
+            "invoice_and_PO_details": mapped_data_without_score,
+            "business_rules": mapped_rules
+        }
+        try:
+            results = run_llm_invoice_agent(query=query, input_data=combined_input_without_score)
+            st.subheader("Agent Responses")
+            for tool_name, result in results.items():
+                st.markdown(f"**{tool_name.replace('_', ' ').title()}**: {result}")
+        except Exception as e:
+            st.error(f"Agent failed: {e}")
 

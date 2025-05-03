@@ -48,7 +48,7 @@ def run_llm_invoice_agent(query: str, input_data: Dict) -> Dict:
             for tool in TOOLS:
                 tool_name = tool.name
                 try:
-                    output = tool.run(json.dumps(input_data))
+                    output = tool.run(input_data)
                     results[tool_name] = {
                         "result": output,
                         "confidence": "95%"  # Placeholder or optionally from LLM scoring

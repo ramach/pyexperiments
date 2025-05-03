@@ -116,3 +116,21 @@ Map using map_docx_text_to_invoice_data.
 
 Then pass to your unified run_llm_invoice_agent(query, input_data) function.
 ```
+```text
+data structure considerations
+
+Recommendation:
+Stick to dict inputs internally.
+
+Only serialize to JSON (json.dumps()) if you're passing data across boundaries (e.g. HTTP, UI frontend).
+
+Avoid unnecessary serialization/deserialization within the LangChain agent when already working with Python data structures.
+
+The tools are defined to accept dict input directly (i.e. using Pydantic models or function signatures that expect a dict or typed fields).
+
+avoid calling json.loads() on the input inside the tool.
+
+not necessary to json.dumps() to stringify the dict before passing it to the tool.
+
+
+```
