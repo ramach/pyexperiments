@@ -1,3 +1,5 @@
+from typing import Dict
+
 from langchain.chains import LLMChain
 from langchain.chat_models import ChatOpenAI
 from langchain.agents import initialize_agent, AgentType
@@ -91,7 +93,7 @@ def map_extracted_text_to_invoice_data_with_confidence_score(extracted_text: str
         input_variables=["extracted_text"],
         template = """ you are an AI assistant designed to extract structured invoice data from raw extracted text.
          Please parse the following extracted text and output the details in JSON format with "value" and "confidence" (0.0 to 1.0) for each field:
-         
+
          Extracted Text:
          {extracted_text}
          
@@ -104,7 +106,6 @@ def map_extracted_text_to_invoice_data_with_confidence_score(extracted_text: str
          - line_items
          if the vendor name is missing use business_id or client id.
          If a field is not present, say "MISSING". Return a JSON object.
-         
          """)
 
     chain = LLMChain(llm=llm, prompt=prompt_template)
@@ -124,8 +125,9 @@ def map_extracted_text_to_po_data_with_confidence_score(extracted_text: str) -> 
     prompt_template = PromptTemplate(
         input_variables=["extracted_text"],
         template = """ you are an AI assistant designed to extract structured purchase data from raw extracted text.
+         for amount field please sum all line_items unit_price multiplied by number of units 
          Please parse the following extracted text and output the details in JSON format with "value" and "confidence" (0.0 to 1.0) for each field:
-         
+
          Extracted Text:
          {extracted_text}
          
@@ -137,8 +139,8 @@ def map_extracted_text_to_po_data_with_confidence_score(extracted_text: str) -> 
          - payment_method
          - line_items
          if the vendor name is missing use business_id or client id.
+         for amount field please sum all line_items unit_price multiplied by number of units.
          If a field is not present, say "MISSING". Return a JSON object.
-         
          """)
 
     chain = LLMChain(llm=llm, prompt=prompt_template)
@@ -161,7 +163,7 @@ def map_extracted_text_to_invoice_data(extracted_text: str) -> dict:
         input_variables=["extracted_text"],
         template = """ you are an AI assistant designed to extract structured purchase data from raw extracted text.
          Please parse the following extracted text and output the details in JSON format with "value" and "confidence" (0.0 to 1.0) for each field:
-         
+
          Extracted Text:
          {extracted_text}
          
@@ -176,11 +178,9 @@ def map_extracted_text_to_invoice_data(extracted_text: str) -> dict:
          - line_items
          if the vendor name is missing use business_id or client id.
          If a field is not present, say "MISSING". Return a JSON object.
-         
          """)
 
     # Use your LLM call here (OpenAI, Anthropic, etc.)
-    chain = LLMChain(llm=llm, prompt=prompt_template)
     response = llm_chain.run(extracted_text)  # <- replace with your function
     try:
         return json.loads(response)
@@ -210,3 +210,32 @@ def run_llm_invoice_agent(query: str, extracted_text: str) -> str:
     agent = get_invoice_agent()
     result = agent.run(f"Verify invoice from {json.dumps(validated.dict())}")
     return result
+
+def extract_contract_fields_with_llm(contract_text: str) -> Dict:
+    from langchain.prompts import PromptTemplate
+    prompt_template = PromptTemplate(
+        input_variables=["extracted_text"],
+        template = f""" you are an AI assistant designed to extract structured contract from raw extracted text.
+         Please parse the following extracted text and output the details in JSON format with "value" and "confidence" (0.0 to 1.0) for each field:
+
+         Extracted Text:
+         {contract_text}
+         
+         The output should include:
+         - Client Name
+         - Client Address
+         - Consulting Firm Name
+         - Consulting Firm Address
+         - Scope of Work
+         - Fees and Payment Terms
+         - Terms and Termination
+         if the vendor name is missing use business_id or client id.
+         If a field is not present, say "MISSING". Return a JSON object.
+         """)
+    chain = LLMChain(llm=llm, prompt=prompt_template)
+    response = llm_chain.run(contract_text)
+
+    try:
+        return eval(response)  # Replace with `json.loads()` if result is a valid JSON string
+    except Exception as e:
+        return {"error": f"Failed to parse result: {e}", "raw_result": response}

@@ -62,7 +62,6 @@ if st.button("Run Invoice Agent"):
     else:
         st.success(f"✅ Found {len(rules)} candidate rules")
         mapped_rules = []
-
         for i, rule in enumerate(rules):
             with st.expander(f"Rule {i+1} (Raw Text)"):
                 st.text(rule)
