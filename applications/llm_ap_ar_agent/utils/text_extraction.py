@@ -123,5 +123,71 @@ def extract_business_rules_from_docx(file_path: str) -> list[str]:
     doc = Document(file_path)
     return [para.text.strip() for para in doc.paragraphs if para.text.strip()]
 
+import pandas as pd
+from typing import List, Dict, Any
+
+import pandas as pd
+from typing import Dict, Any
+import re
+
+def extract_timecard_metadata_generic(file_path: str) -> Dict[str, Any]:
+    df = pd.read_excel(file_path, header=None)
+    metadata = {}
+
+    # Known field patterns (regex-style)
+    field_patterns = {
+        "employee_name": r"\bemployee\b",
+        "manager_name": r"\bmanager\b",
+        "street_address": r"street address",
+        "address_2": r"address 2",
+        "city_state_zip": r"city.*zip",
+        "phone": r"phone",
+        "email": r"e-?mail",
+        "week_ending": r"week ending",
+        "total_hours": r"total hours?",
+        "hourly_rate": r"rate per hour",
+        "total_amount": r"total pay|total amount",
+    }
+
+    def match_field(label: str) -> str:
+        label_lower = label.strip().lower()
+        for field, pattern in field_patterns.items():
+            if re.search(pattern, label_lower):
+                return field
+        return None
+
+    # Scan row-by-row
+    for _, row in df.iterrows():
+        row = row.fillna("").astype(str).str.strip().tolist()
+        for i in range(len(row) - 1):
+            field_name = match_field(row[i])
+            if field_name and row[i + 1]:
+                value = row[i + 1]
+                # Try converting numerical fields
+                if field_name in ["total_hours", "hourly_rate", "total_amount"]:
+                    try:
+                        value = float(re.sub(r"[^\d.]", "", value))
+                    except:
+                        value = 0.0
+                metadata[field_name] = value
+
+    # Build full address
+    full_address = ", ".join(filter(None, [
+        metadata.get("street_address", ""),
+        metadata.get("address_2", ""),
+        metadata.get("city_state_zip", "")
+    ]))
+
+    return {
+        "employee_name": metadata.get("employee_name", "Unknown"),
+        "manager_name": metadata.get("manager_name", "Unknown"),
+        "phone": metadata.get("phone", "Unknown"),
+        "email": metadata.get("email", "Unknown"),
+        "address": full_address or "Unknown",
+        "week_ending": metadata.get("week_ending", "Unknown"),
+        "total_hours": metadata.get("total_hours", 0.0),
+        "hourly_rate": metadata.get("hourly_rate", 0.0),
+        "total_amount": metadata.get("total_amount", 0.0),
+    }
 
 

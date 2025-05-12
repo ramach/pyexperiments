@@ -2,10 +2,11 @@
 import json
 import re
 
+
 def run_invoice_verification(invoice_data):
     try:
         if isinstance(invoice_data, str):
-            print( f"printing invoice_id in run_invoice_verification {invoice_data}")
+            print(f"printing invoice_id in run_invoice_verification {invoice_data}")
             invoice_data = json.loads(invoice_data)
 
         required_fields = ["invoice_id", "vendor", "amount", "date"]
@@ -21,6 +22,7 @@ def run_invoice_verification(invoice_data):
 
     except Exception as e:
         return f"[Invoice Verification Error] {str(e)}"
+
 
 def run_po_matching(invoice_data):
     try:
@@ -48,6 +50,7 @@ def run_po_matching(invoice_data):
     except Exception as e:
         return f"[PO Matching Error] {str(e)}"
 
+
 def run_approval_process(invoice_data):
     try:
         if isinstance(invoice_data, str):
@@ -63,6 +66,7 @@ def run_approval_process(invoice_data):
 
     except Exception as e:
         return f"[Approval Process Error] {str(e)}"
+
 
 def run_payment_processing(invoice_data):
     try:

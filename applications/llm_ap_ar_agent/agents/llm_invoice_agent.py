@@ -98,10 +98,15 @@ def map_extracted_text_to_invoice_data_with_confidence_score(extracted_text: str
          {extracted_text}
          
          The output should include:
+         - title
          - invoice_id
          - vendor
          - date
          - amount
+         - invoice_title
+         - supplier_information
+         - tax
+         - insurance
          - payment_method
          - line_items
          if the vendor name is missing use business_id or client id.
@@ -132,11 +137,14 @@ def map_extracted_text_to_po_data_with_confidence_score(extracted_text: str) -> 
          {extracted_text}
          
          The output should include:
+         - title
+         - supplier
          - customer
          - date
          - amount
          - purchase_order_id
          - payment_method
+         - project_description
          - line_items
          if the vendor name is missing use business_id or client id.
          for amount field please sum all line_items unit_price multiplied by number of units.
@@ -154,6 +162,39 @@ def map_extracted_text_to_po_data_with_confidence_score(extracted_text: str) -> 
         return {}
 
     return data
+
+def map_extracted_text_to_timecard_data_with_confidence_score(extracted_text: str) -> dict:
+    model_schema = {"contractor_name", "manager_name", "amount", "date_range", "hours_worked", "rate_per_hour", "employee_details"}
+    prompt_template = PromptTemplate(
+        input_variables=["extracted_text"],
+        template = """ you are an AI assistant designed to extract structured purchase data from raw extracted text.
+         Please parse the following extracted text and output the details in JSON format with "value" and "confidence" (0.0 to 1.0) for each field:
+
+         Extracted Text:
+         {extracted_text}
+         
+         The output should include:
+         - contractor_name
+         - manager_name
+         - hours_worked
+         - date_range
+         - amount
+         - employee_details
+         If a field is not present, say "MISSING". Return a JSON object.
+         """)
+
+    chain = LLMChain(llm=llm, prompt=prompt_template)
+
+    try:
+        response = chain.run(extracted_text)
+        data = json.loads(response)
+        logger.debug("[InvoiceAgent_mapping_with_confidence] structured_data: %s", data)
+    except Exception as e:
+        print(f"Error in mapping extracted text: {e}")
+        return {}
+
+    return data
+
 
 def map_extracted_text_to_invoice_data(extracted_text: str) -> dict:
     """
@@ -233,7 +274,7 @@ def extract_contract_fields_with_llm(contract_text: str) -> Dict:
          If a field is not present, say "MISSING". Return a JSON object.
          """)
     chain = LLMChain(llm=llm, prompt=prompt_template)
-    response = llm_chain.run(contract_text)
+    response = chain.run(contract_text)
 
     try:
         return eval(response)  # Replace with `json.loads()` if result is a valid JSON string

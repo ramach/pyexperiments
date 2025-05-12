@@ -4,14 +4,16 @@ import os
 import sys
 from dotenv import load_dotenv
 
+
 load_dotenv()
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from agents.wrapped_llm_invoice_agent import wrapped_llm_invoice_agent, InvoiceAgentInput
+from agents.wrapped_llm_invoice_agent import run_llm_invoice_agent, LLMInvoiceAgentInput
 from utils.text_extraction import extract_text_from_pdf
 from utils.text_extraction import extract_text_from_image
-from agents.llm_contract_extractor import extract_text_from_docx, extract_contract_fields_with_llm_2
+from agents.llm_contract_extractor import extract_text_from_docx, extract_contract_fields_with_llm
 from utils.text_extraction import extract_business_rules_from_docx
+from agents.llm_invoice_agent import map_extracted_text_to_invoice_data_with_confidence_score
 from agents.llm_invoice_agent import map_extracted_text_to_invoice_data
 from agents.llm_invoice_agent import map_extracted_text_to_po_data_with_confidence_score
 from agents.llm_business_rule_agent import map_rule_text_to_structured
@@ -47,15 +49,20 @@ if st.button("Run Agent"):
     with st.spinner("Processing..."):
         # Invoice
         invoice_text = process_upload(invoice_file)
-        invoice_data = map_extracted_text_to_invoice_data(invoice_text) if invoice_text else None
+        invoice_data = map_extracted_text_to_invoice_data_with_confidence_score(invoice_text) if invoice_text else None
+        st.subheader("📌 Extracted Fields")
+        st.code(invoice_data, language="json")
+        st.json(invoice_data)
 
         # PO
         po_text = process_upload(po_file)
         po_data = map_extracted_text_to_po_data_with_confidence_score(po_text) if po_text else None  # reuse mapping for PO
-
+        st.subheader("📌 Extracted Fields")
+        st.code(po_data, language="json")
+        st.json(po_data)
         # Contract
         contract_text = extract_text_from_docx(contract_file)
-        contract_data = extract_contract_fields_with_llm_2(contract_text) if contract_text else None
+        contract_data = extract_contract_fields_with_llm(contract_text) if contract_text else None
         st.subheader("📌 Extracted Fields")
         st.code(contract_data, language="json")
 
@@ -70,18 +77,20 @@ if st.button("Run Agent"):
                     mapped = map_rule_text_to_structured(rule)
                     st.json(mapped)
                     mapped_rules.append(mapped)
-
+        combined_data = {
+            "invoice": invoice_data or {},
+            "purchase_order": po_data or {},
+            "contract": contract_data  or {},
+            "business_rules": rules_data or []
+        }
         # Prepare agent input
-        input_data = InvoiceAgentInput(
-            query=query,
-            invoice=invoice_data,
-            purchase_order=po_data,
-            contract=contract_data,
-            business_rules=mapped_rules
+        llm_invoice_agent_input = LLMInvoiceAgentInput(
+            input=query,
+            input_data=combined_data
         )
 
         # Call agent
-        result = wrapped_llm_invoice_agent(input_data)
+        result = run_llm_invoice_agent(query, combined_data)
 
         # Output
         st.subheader("🔍 Agent Output")

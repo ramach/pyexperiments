@@ -18,6 +18,7 @@ import json
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+
 # Pydantic input
 class InvoiceInput(BaseModel):
     invoice_id: str
@@ -26,6 +27,7 @@ class InvoiceInput(BaseModel):
     date: str
     purchase_order: str
     payment_method: str
+
 
 def wrapped_invoice_verification(data):
     try:
@@ -46,6 +48,7 @@ def wrapped_invoice_verification(data):
 
     except Exception as e:
         return f"[wrapped_invoice_verification Exception] {str(e)}"
+
 
 # Tool definitions
 tools = [
@@ -71,6 +74,7 @@ tools = [
     ),
 ]
 
+
 def get_invoice_agent():
     llm = ChatOpenAI(temperature=0, model_name="gpt-4")
     logger.debug("Initializing invoice agent with tools: %s", [tool.name for tool in tools])
@@ -81,6 +85,7 @@ def get_invoice_agent():
         verbose=True,
         handle_parsing_errors=True
     )
+
 
 def run_invoice_agent_with_function_calling(input: str) -> str:
     try:

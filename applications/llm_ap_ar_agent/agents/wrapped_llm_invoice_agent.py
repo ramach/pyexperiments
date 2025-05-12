@@ -1,8 +1,14 @@
-from langchain.tools import Tool
+import json
 
-from pydantic import BaseModel, Field
-from typing import Dict, List, Optional
+from langchain.tools import Tool, StructuredTool
+
+from pydantic.v1 import BaseModel
+from langchain.agents import initialize_agent, AgentType
+from langchain.chat_models import ChatOpenAI
+from typing import Dict, List, Optional, Any
 import logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 class ContractData(BaseModel):
     client_name: Optional[str] = None
@@ -12,31 +18,28 @@ class ContractData(BaseModel):
     payment_terms: Optional[str] = None
     termination_clause: Optional[str] = None
 
-from typing import Dict, Any
-from pydantic import BaseModel
-
 class LLMInvoiceAgentInput(BaseModel):
-    query: str
-    combined_data: Dict[str, Any]
+    input: str
+    input_data: Dict[str, Any]
 
-class InvoiceAgentInput(BaseModel):
-    query: str = Field(..., description="Natural language question or instruction for the invoice agent")
-    invoice: Optional[Dict] = None
-    purchase_order: Optional[Dict] = None
-    contract: Optional[Dict] = None
-    business_rules: Optional[List[Dict]] = None
-
-
-def run_invoice_verification(invoice_data, business_rules):
-    required_fields = ["invoice_id", "vendor_name", "invoice_date", "amount_due"]
+def run_invoice_verification(input_data: Dict[str, Any]):
+    invoice_data = input_data.get("invoice", {})
+    invoice_fields = json.dumps(invoice_data)
+    logger.debug(f"[run_invoice_verification], {invoice_data}")
+    logger.debug(f"[run_invoice_verification], {invoice_fields}")
+    business_rules = input_data.get("business_rules", [])
+    required_fields = ["invoice_id", "vendor", "date", "amount"]
     missing_fields = [f for f in required_fields if f not in invoice_data or not invoice_data[f]]
 
     compliance_issues = []
     if business_rules:
-        max_allowed_amount = business_rules.get("max_invoice_amount")
-        if max_allowed_amount and invoice_data.get("amount_due", 0) > max_allowed_amount:
-            compliance_issues.append(f"Amount due exceeds allowed maximum of {max_allowed_amount}")
-
+        invoice_business_rule = business_rules[0]
+        invoice_business_rule_fields = json.dumps(invoice_business_rule)
+        logger.debug(f"[run_invoice_verification], {invoice_business_rule}")
+        logger.debug(f"[run_invoice_verification], {invoice_business_rule_fields}")
+        if "must be verified" in invoice_business_rule_fields:
+            if missing_fields:
+                compliance_issues.append("compliance issues in invoice identified")
     result = {
         "status": "success" if not missing_fields and not compliance_issues else "failed",
         "missing_fields": missing_fields,
@@ -45,7 +48,9 @@ def run_invoice_verification(invoice_data, business_rules):
     return result
 
 
-def run_po_matching(invoice_data, purchase_order_data):
+def run_po_matching(input_data: Dict[str, Any]):
+    invoice_data = input_data.get("invoice", {})
+    purchase_order_data = input_data.get("purchase_order", {})
     mismatches = []
     if not invoice_data or not purchase_order_data:
         return {"status": "failed", "reason": "Missing invoice or purchase order data"}
@@ -61,7 +66,10 @@ def run_po_matching(invoice_data, purchase_order_data):
     }
 
 
-def run_approval_process(invoice_data, contract_data, business_rules):
+def run_approval_process(input_data: Dict[str, Any]):
+    invoice_data = input_data.get("invoice", {})
+    business_rules = input_data.get("business_rules", [])
+    contract_data = input_data.get("contract", {})
     issues = []
     if not invoice_data or not contract_data:
         return {"status": "failed", "reason": "Missing invoice or contract data"}
@@ -78,7 +86,9 @@ def run_approval_process(invoice_data, contract_data, business_rules):
     }
 
 
-def run_payment_processing(invoice_data, approval_result):
+def run_payment_processing(input_data: Dict[str, Any]):
+    invoice_data = input_data.get("invoice", {})
+    approval_result = input_data.get("approval", {})
     if not invoice_data:
         return {"status": "failed", "reason": "Invoice data missing"}
     if not approval_result or approval_result.get("status") != "approved":
@@ -90,56 +100,44 @@ def run_payment_processing(invoice_data, approval_result):
     }
 
 
-def run_llm_invoice_agent(query: str, combined_data: Dict) -> Dict:
-    """
-    Executes the invoice agent pipeline with optional sections and fallback defaults.
-    Validates keys and provides logs for missing components.
-    """
-    from langchain.agents import initialize_agent, AgentType
-    from langchain.chat_models import ChatOpenAI
-    # Ensure top-level keys exist or use safe defaults
-    invoice_data = combined_data.get("invoice", {})
-    purchase_order_data = combined_data.get("purchase_order", {})
-    contract_data = combined_data.get("contract", {})
-    business_rules = combined_data.get("business_rules", [])
-    # Log any missing parts
-    if not invoice_data:
-        logging.warning("⚠️ Missing 'invoice' data.")
-    if not purchase_order_data:
-        logging.warning("⚠️ Missing 'purchase_order' data.")
-    if not contract_data:
-        logging.warning("⚠️ Missing 'contract' data.")
-    if not business_rules:
-        logging.warning("⚠️ Missing 'business_rules'.")
+def build_invoice_agent_tools(input_data: Dict[str, Any]):
+    def make_tool_runner(tool_logic_func):
+        def tool_runner(_: str) -> str:
+            return tool_logic_func(input_data)
+        return tool_runner
 
-    llm_invoice_agent_tool = Tool(
-        name="LLMInvoiceAgent",
-        func=run_llm_invoice_agent,
-        description="Analyze invoice, PO, contract, and business rules using LLM",
-        args_schema=LLMInvoiceAgentInput
-    )
+    tools = [
+        Tool(
+            name="invoice_verification",
+            func=make_tool_runner(run_invoice_verification),
+            description="Verify invoice details (e.g., ID, vendor, amount)"
+        ),
+        Tool(
+            name="po_matching",
+            func=make_tool_runner(run_po_matching),
+            description="Match the invoice with the correct PO"
+        ),
+        Tool(
+            name="approval_process",
+            func=make_tool_runner(run_approval_process),
+            description="Determine who needs to approve the invoice"
+        ),
+        Tool(
+            name="payment_processing",
+            func=make_tool_runner(run_payment_processing),
+            description="Simulate invoice payment process"
+        )
+    ]
+    return tools
 
-    llm = ChatOpenAI(model="gpt-4", temperature=0)
+
+def run_llm_invoice_agent(query: str, input_data: Dict[str, Any]) -> str:
+    tools = build_invoice_agent_tools(input_data)
     agent_executor = initialize_agent(
-        tools=[llm_invoice_agent_tool],
-        llm=llm,
-        agent=AgentType.OPENAI_FUNCTIONS,
+        tools=tools,
+        llm = ChatOpenAI(temperature=0, model_name="gpt-4"),
+        agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
         verbose=True
     )
+    return agent_executor.run(query)
 
-    response = agent_executor.run({
-        "query": query,
-        "combined_data": combined_data
-    })
-    return eval(response)
-
-
-def wrapped_llm_invoice_agent(input_data: InvoiceAgentInput) -> Dict:
-    # Convert Pydantic model to plain dict
-    combined_data = {
-        "invoice": input_data.invoice or {},
-        "purchase_order": input_data.purchase_order or {},
-        "contract": input_data.contract  or {},
-        "business_rules": input_data.business_rules or []
-    }
-    return run_llm_invoice_agent(input_data.query, combined_data)
