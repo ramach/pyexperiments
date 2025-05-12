@@ -138,10 +138,18 @@ def map_extracted_text_to_po_data_with_confidence_score(extracted_text: str) -> 
          
          The output should include:
          - title
-         - supplier
-         - customer
+         - supplier/vendor
+         - customer/buyer
          - date
          - amount
+         - scope
+         - total_value
+         - Delivery_Date
+         - Schedule
+         - rate
+         - payment_terms
+         - terms
+         - max_authorized_amount
          - purchase_order_id
          - payment_method
          - project_description

@@ -45,7 +45,7 @@ if st.button("Run Invoice Agent"):
         if "pdf" in po_file.type:
             po_text = extract_text_from_pdf(po_file)
         else:
-            po_text = extract_text_from_image(po_file)
+            po_text = extract_business_rules_from_docx(po_file)
     if invoice_text and po_text:
         combined_text = invoice_text + "\n\n" + po_text
         mapped_data = map_extracted_text_to_invoice_data_with_confidence_score(combined_text)

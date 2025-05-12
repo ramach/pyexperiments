@@ -3,6 +3,10 @@ import pytesseract
 from PIL import Image
 import io
 from PyPDF2 import PdfReader
+import logging
+import pdfplumber
+
+logger = logging.getLogger(__name__)
 
 def extract_text_from_pdf(file):
     try:
@@ -13,6 +17,28 @@ def extract_text_from_pdf(file):
         return text.strip()
     except Exception as e:
         return f"[Error extracting PDF text: {str(e)}]"
+
+def extract_invoice_table(pdf_path: str) -> list:
+    """Attempt to extract tabular data (e.g., invoice line items) from PDF."""
+    try:
+        tables = []
+        with pdfplumber.open(pdf_path) as pdf:
+            for page in pdf.pages:
+                extracted = page.extract_table()
+                if extracted:
+                    tables.append(extracted)
+        return tables
+    except Exception as e:
+        logger.warning(f"[PDF Table Extract] Failed: {e}")
+        return []
+
+def robust_extract_text(pdf_path: str) -> str:
+    """Try digital extraction first, fall back to OCR if needed."""
+    text = extract_text_from_pdf(pdf_path)
+    if not text or len(text.strip()) < 100:
+        logger.info("[PDF Extract] Falling back to OCR...")
+        text = extract_text_from_scanned_pdf(pdf_path)
+    return text.strip()
 
 def extract_text_from_image(image_file):
     try:

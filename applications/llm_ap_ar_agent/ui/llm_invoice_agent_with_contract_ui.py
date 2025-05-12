@@ -26,7 +26,7 @@ query = st.text_input("Enter your question for the invoice agent", "Analyze this
 
 # Upload files
 invoice_file = st.file_uploader("Upload Invoice (PDF or image)", type=["pdf", "png", "jpg"])
-po_file = st.file_uploader("Upload Purchase Order (PDF or image)", type=["pdf", "png", "jpg"])
+po_file = st.file_uploader("Upload Purchase Order (PDF or image or docx)", type=["pdf", "png", "jpg", "docx"])
 contract_file = st.file_uploader("Upload Contract (DOCX)", type=["docx"])
 rules_file = st.file_uploader("Upload Business Rules (DOCX)", type=["docx"])
 
@@ -37,6 +37,8 @@ def process_upload(file):
         return extract_text_from_pdf(file)
     elif file.name.lower().endswith((".png", ".jpg")):
         return extract_text_from_image(file)
+    elif file.name.lower().endswith(".docx"):
+        return extract_business_rules_from_docx(file)
     return None
 
 # Extract and map

@@ -15,8 +15,7 @@ from io import BytesIO
 from datetime import datetime
 
 from utils.text_extraction import extract_timecard_metadata_generic
-from utils.text_extraction import extract_text_from_pdf
-from utils.pdf_utils import robust_extract_text
+from utils.text_extraction import robust_extract_text
 from agents.llm_invoice_agent import  map_extracted_text_to_timecard_data_with_confidence_score
 # === STEP 1: Time Card Parser ===
 
