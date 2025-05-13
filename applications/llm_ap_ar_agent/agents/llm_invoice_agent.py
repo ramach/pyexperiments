@@ -186,6 +186,7 @@ def map_extracted_text_to_timecard_data_with_confidence_score(extracted_text: st
          - manager_name
          - hours_worked
          - date_range
+         - rate
          - amount
          - employee_details
          If a field is not present, say "MISSING". Return a JSON object.

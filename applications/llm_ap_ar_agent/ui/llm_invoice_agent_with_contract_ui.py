@@ -11,12 +11,14 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from agents.wrapped_llm_invoice_agent import run_llm_invoice_agent, LLMInvoiceAgentInput
 from utils.text_extraction import extract_text_from_pdf
 from utils.text_extraction import extract_text_from_image
-from agents.llm_contract_extractor import extract_text_from_docx, extract_contract_fields_with_llm
+from agents.llm_contract_extractor import extract_text_from_docx, extract_contract_fields_with_llm_experimental
 from utils.text_extraction import extract_business_rules_from_docx
 from agents.llm_invoice_agent import map_extracted_text_to_invoice_data_with_confidence_score
 from agents.llm_invoice_agent import map_extracted_text_to_invoice_data
 from agents.llm_invoice_agent import map_extracted_text_to_po_data_with_confidence_score
 from agents.llm_business_rule_agent import map_rule_text_to_structured
+from utils.text_extraction import robust_extract_text
+from agents.llm_invoice_agent import  map_extracted_text_to_timecard_data_with_confidence_score
 
 st.set_page_config(page_title="LLM Invoice Agent", layout="wide")
 st.title("📄 LLM Invoice + PO + Contract + Business Rules Agent")
@@ -29,6 +31,7 @@ invoice_file = st.file_uploader("Upload Invoice (PDF or image)", type=["pdf", "p
 po_file = st.file_uploader("Upload Purchase Order (PDF or image or docx)", type=["pdf", "png", "jpg", "docx"])
 contract_file = st.file_uploader("Upload Contract (DOCX)", type=["docx"])
 rules_file = st.file_uploader("Upload Business Rules (DOCX)", type=["docx"])
+uploaded_timecard_file_pdf = st.file_uploader("Upload Time Card pdf", type=["pdf"])
 
 def process_upload(file):
     if file is None:
@@ -63,8 +66,8 @@ if st.button("Run Agent"):
         st.code(po_data, language="json")
         st.json(po_data)
         # Contract
-        contract_text = extract_text_from_docx(contract_file)
-        contract_data = extract_contract_fields_with_llm(contract_text) if contract_text else None
+        #contract_text = extract_text_from_docx(contract_file)
+        contract_data = extract_contract_fields_with_llm_experimental(contract_file) if contract_file else None
         st.subheader("📌 Extracted Fields")
         st.code(contract_data, language="json")
 
@@ -79,6 +82,14 @@ if st.button("Run Agent"):
                     mapped = map_rule_text_to_structured(rule)
                     st.json(mapped)
                     mapped_rules.append(mapped)
+        if uploaded_timecard_file_pdf:
+            timecard_text = robust_extract_text(uploaded_timecard_file_pdf)
+            st.subheader("📋 Extracted Time Card Data")
+            st.text_area("Extracted Text from PDF", timecard_text, height=200)
+            timecard_data = map_extracted_text_to_timecard_data_with_confidence_score(timecard_text) if timecard_text else None
+            st.subheader("📌 Extracted Fields")
+            st.code(timecard_data, language="json")
+            st.json(timecard_data)
         combined_data = {
             "invoice": invoice_data or {},
             "purchase_order": po_data or {},
