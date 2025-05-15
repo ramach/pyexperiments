@@ -153,7 +153,8 @@ def map_extracted_text_to_sow_data_with_confidence_score(extracted_text: str) ->
          - period
          - line_items
          if the vendor name is missing use business_id or client id.
-         if invoice_title is missing it is "Statement of Work"
+         for more than one contacts use array and extract each field separately - company, name, phone, email
+         if title is missing it is "Statement of Work"
          use "Remit To" field for vendor and vice-versa
          use additional notes for period
          If a field is not present, say "MISSING". Return a JSON object.
