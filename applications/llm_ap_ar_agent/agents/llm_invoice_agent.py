@@ -101,15 +101,20 @@ def map_extracted_text_to_invoice_data_with_confidence_score(extracted_text: str
          - title
          - invoice_id
          - vendor
+         - remit_to
          - date
          - amount
          - invoice_title
          - supplier_information
+         - period
          - tax
          - insurance
          - payment_method
          - line_items
          if the vendor name is missing use business_id or client id.
+         if invoice_title is missing it is "Invoice"
+         use "Remit To" field for vendor and vice-versa
+         use additional notes for period
          If a field is not present, say "MISSING". Return a JSON object.
          """)
 
@@ -124,6 +129,48 @@ def map_extracted_text_to_invoice_data_with_confidence_score(extracted_text: str
         return {}
 
     return data
+
+def map_extracted_text_to_sow_data_with_confidence_score(extracted_text: str) -> dict:
+    model_schema = {"invoice_id", "vendor", "amount", "date", "purchase_order", "payment_method"}
+    prompt_template =PromptTemplate(
+        input_variables=["extracted_text"],
+        template = """ you are an AI assistant designed to extract structured invoice data from raw extracted text.
+         Please parse the following extracted text and output the details in JSON format with "value" and "confidence" (0.0 to 1.0) for each field:
+
+         Extracted Text:
+         {extracted_text}
+         
+         The output should include:
+         - title
+         - description
+         - term
+         - roles_responsibilities
+         - additional_terms
+         - contractor
+         - contacts
+         - additional_terms
+         - provider_information
+         - period
+         - line_items
+         if the vendor name is missing use business_id or client id.
+         if invoice_title is missing it is "Statement of Work"
+         use "Remit To" field for vendor and vice-versa
+         use additional notes for period
+         If a field is not present, say "MISSING". Return a JSON object.
+         """)
+
+    chain = LLMChain(llm=llm, prompt=prompt_template)
+
+    try:
+        response = chain.run(extracted_text)
+        data = json.loads(response)
+        logger.debug("[InvoiceAgent_mapping_with_confidence] structured_data: %s", data)
+    except Exception as e:
+        print(f"Error in mapping extracted text: {e}")
+        return {}
+
+    return data
+
 
 def map_extracted_text_to_po_data_with_confidence_score(extracted_text: str) -> dict:
     model_schema = {"invoice_id", "vendor", "amount", "date", "purchase_order", "payment_method"}

@@ -16,6 +16,7 @@ from utils.text_extraction import extract_business_rules_from_docx
 from agents.llm_invoice_agent import map_extracted_text_to_invoice_data_with_confidence_score
 from agents.llm_invoice_agent import map_extracted_text_to_invoice_data
 from agents.llm_invoice_agent import map_extracted_text_to_po_data_with_confidence_score
+from agents.llm_invoice_agent import map_extracted_text_to_sow_data_with_confidence_score
 from agents.llm_business_rule_agent import map_rule_text_to_structured
 from utils.text_extraction import robust_extract_text
 from agents.llm_invoice_agent import  map_extracted_text_to_timecard_data_with_confidence_score
@@ -31,6 +32,7 @@ invoice_file = st.file_uploader("Upload Invoice (PDF or image)", type=["pdf", "p
 po_file = st.file_uploader("Upload Purchase Order (PDF or image or docx)", type=["pdf", "png", "jpg", "docx"])
 contract_file = st.file_uploader("Upload Contract (DOCX)", type=["docx"])
 rules_file = st.file_uploader("Upload Business Rules (DOCX)", type=["docx"])
+statement_of_work_file = st.file_uploader("Upload SOW (DOCX)", type=["docx"])
 uploaded_timecard_file_pdf = st.file_uploader("Upload Time Card pdf", type=["pdf"])
 
 def process_upload(file):
@@ -49,6 +51,7 @@ invoice_data = None
 po_data = None
 contract_data = None
 rules_data = None
+sow_data = None
 
 if st.button("Run Agent"):
     with st.spinner("Processing..."):
@@ -65,6 +68,7 @@ if st.button("Run Agent"):
         st.subheader("📌 Extracted Fields")
         st.code(po_data, language="json")
         st.json(po_data)
+
         # Contract
         #contract_text = extract_text_from_docx(contract_file)
         contract_data = extract_contract_fields_with_llm_experimental(contract_file) if contract_file else None
@@ -96,6 +100,13 @@ if st.button("Run Agent"):
             "contract": contract_data  or {},
             "business_rules": rules_data or []
         }
+
+        # SOW processing
+        sow_text = extract_business_rules_from_docx(statement_of_work_file) if statement_of_work_file else None
+        sow_data = map_extracted_text_to_sow_data_with_confidence_score(sow_text)
+        st.subheader("📌 Extracted Fields")
+        st.code(sow_data, language="json")
+        st.json(sow_data)
         # Prepare agent input
         llm_invoice_agent_input = LLMInvoiceAgentInput(
             input=query,
