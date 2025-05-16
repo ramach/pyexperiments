@@ -86,6 +86,37 @@ invoice_extraction_prompt = PromptTemplate(
 llm = ChatOpenAI(model_name="gpt-4", temperature=0)
 llm_chain = LLMChain(llm=llm, prompt=invoice_extraction_prompt)
 
+def map_extracted_text_to_business_rules_data_with_confidence_score(extracted_text: str) -> dict:
+    prompt_template =PromptTemplate(
+        input_variables=["extracted_text"],
+        template = """ you are an AI assistant designed to extract structured invoice data from raw extracted text.
+         Please parse the following extracted text and output the details in JSON format with "value" and "confidence" (0.0 to 1.0) for each field:
+
+         Extracted Text:
+         {extracted_text}
+
+         The output should include:
+         - title
+         - version
+         - section
+         - rules
+         each section should have name "name" and its own rules array under "rules"
+         please keep title simple
+         If a field is not present, say "MISSING". Return a JSON object.
+         """)
+
+    chain = LLMChain(llm=llm, prompt=prompt_template)
+
+    try:
+        response = chain.run(extracted_text)
+        data = json.loads(response)
+        logger.debug("[InvoiceAgent_mapping_with_confidence] structured_data: %s", data)
+    except Exception as e:
+        print(f"Error in mapping extracted text: {e}")
+        return {}
+
+    return data
+
 #extracted data with confidence score - experimental used only to extract confidence scores
 def map_extracted_text_to_invoice_data_with_confidence_score(extracted_text: str) -> dict:
     model_schema = {"invoice_id", "vendor", "amount", "date", "purchase_order", "payment_method"}

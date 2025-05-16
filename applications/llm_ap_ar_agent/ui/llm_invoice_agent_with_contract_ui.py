@@ -17,6 +17,7 @@ from agents.llm_invoice_agent import map_extracted_text_to_invoice_data_with_con
 from agents.llm_invoice_agent import map_extracted_text_to_invoice_data
 from agents.llm_invoice_agent import map_extracted_text_to_po_data_with_confidence_score
 from agents.llm_invoice_agent import map_extracted_text_to_sow_data_with_confidence_score
+from agents.llm_invoice_agent import map_extracted_text_to_business_rules_data_with_confidence_score
 from agents.llm_business_rule_agent import map_rule_text_to_structured
 from utils.text_extraction import robust_extract_text
 from agents.llm_invoice_agent import  map_extracted_text_to_timecard_data_with_confidence_score
@@ -76,16 +77,11 @@ if st.button("Run Agent"):
         st.code(contract_data, language="json")
 
         # Business Rules
-        rules_data = extract_business_rules_from_docx(rules_file)
-        mapped_rules = []
-        for i, rule in enumerate(rules_data):
-            with st.expander(f"Rule {i+1} (Raw Text)"):
-                st.text(rule)
-
-                with st.spinner("Mapping rule with LLM..."):
-                    mapped = map_rule_text_to_structured(rule)
-                    st.json(mapped)
-                    mapped_rules.append(mapped)
+        rules_text = extract_business_rules_from_docx(rules_file)
+        rules_data = map_extracted_text_to_business_rules_data_with_confidence_score(rules_text)
+        st.subheader("📌 Extracted Fields")
+        st.code(rules_data, language="json")
+        st.json(rules_data)
         if uploaded_timecard_file_pdf:
             timecard_text = robust_extract_text(uploaded_timecard_file_pdf)
             st.subheader("📋 Extracted Time Card Data")
