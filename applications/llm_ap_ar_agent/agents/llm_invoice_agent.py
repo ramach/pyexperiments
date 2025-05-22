@@ -318,8 +318,9 @@ def map_extracted_text_to_timecard_data_with_confidence_score(extracted_text: st
          - amount
          - client_name
          - employee_details
-         extract 
-         If a field is not present, say "MISSING". client_name maybe extracted from first row first column get it from first row first column. Return a JSON object.
+         - hours_worked
+         add hours worked as array for each day during the date range as an hours_worked in this format day:hours. For missing hours use 0
+         If a field is not present, say "MISSING". client_name maybe extracted from the first row get it from first row - first word. Return a JSON object.
          """)
 
     chain = LLMChain(llm=llm, prompt=prompt_template)
@@ -327,7 +328,7 @@ def map_extracted_text_to_timecard_data_with_confidence_score(extracted_text: st
     try:
         response = chain.run(extracted_text)
         logger.debug("[InvoiceAgent_mapping_with_confidence] structured_data: %s", response)
-        data = json.loads(response, encoding='utf-8')
+        data = json.loads(response)
         logger.debug("[InvoiceAgent_mapping_with_confidence] structured_data: %s", data)
     except Exception as e:
         print(f"Error in mapping extracted text: {e}")
