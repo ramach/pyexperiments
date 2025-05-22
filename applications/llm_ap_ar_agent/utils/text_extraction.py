@@ -5,6 +5,7 @@ import io
 from PyPDF2 import PdfReader
 import logging
 import pdfplumber
+from utils.pdf_utils import extract_text_from_scanned_pdf
 
 logger = logging.getLogger(__name__)
 

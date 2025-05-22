@@ -242,7 +242,8 @@ def extract_summary_fields_from_timecard(file_path: str) -> dict:
 
 
 if __name__ == "__main__":
-    parsed_time_card = extract_timecard_metadata_generic("/Users/krishnaramachandran/Downloads/Timecards/11-24-2015.xlsx")
+    parsed_time_card = \
+        parse_time_card_excel("/Users/krishnaramachandran/kasu.ai/pyexperiments/llm_ap_ar_agent/sample-timesheet.xlsx")
     # Convert all datetime/date objects to strings
     clean_data = convert_dates_to_str(parsed_time_card)
     json_output = json.dumps(clean_data, indent=4)

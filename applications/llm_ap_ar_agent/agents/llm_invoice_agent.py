@@ -100,7 +100,11 @@ def map_extracted_text_to_business_rules_data_with_confidence_score(extracted_te
          - version
          - section
          - rules
+         each rule under rules should have a description
          each section should have name "name" and its own rules array under "rules"
+         each sentence will be a rule under rules
+         please make sure all sentences are included
+         each bulleted item can be a rule within that section
          please keep title simple
          If a field is not present, say "MISSING". Return a JSON object.
          """)
@@ -131,21 +135,27 @@ def map_extracted_text_to_invoice_data_with_confidence_score(extracted_text: str
          The output should include:
          - title
          - invoice_id
+         - bill_to
          - vendor
-         - remit_to
          - date
          - amount
          - invoice_title
          - supplier_information
          - period
+         - terms
          - tax
          - insurance
+         - due_date
          - payment_method
+         - additional_text
          - line_items
          if the vendor name is missing use business_id or client id.
          if invoice_title is missing it is "Invoice"
          use "Remit To" field for vendor and vice-versa
+         split vendor and bill_to fields into name, address, phone no and email on separate lines
          use additional notes for period
+         payment_method should be available as a field else say "MISSING"
+         for additional_text please use anything in the document not covered by this schema
          If a field is not present, say "MISSING". Return a JSON object.
          """)
 
@@ -173,13 +183,12 @@ def map_extracted_text_to_sow_data_with_confidence_score(extracted_text: str) ->
          
          The output should include:
          - title
-         - description
+         - description_of_service
          - term
          - roles_responsibilities
          - additional_terms
          - contractor
          - contacts
-         - additional_terms
          - provider_information
          - period
          - line_items
@@ -188,6 +197,8 @@ def map_extracted_text_to_sow_data_with_confidence_score(extracted_text: str) ->
          if title is missing it is "Statement of Work"
          use "Remit To" field for vendor and vice-versa
          use additional notes for period
+         break description_service into an array of rules for each sentence
+         break line_items into an array of rules for each sentence
          If a field is not present, say "MISSING". Return a JSON object.
          """)
 
@@ -203,7 +214,6 @@ def map_extracted_text_to_sow_data_with_confidence_score(extracted_text: str) ->
 
     return data
 
-
 def map_extracted_text_to_po_data_with_confidence_score(extracted_text: str) -> dict:
     model_schema = {"invoice_id", "vendor", "amount", "date", "purchase_order", "payment_method"}
     prompt_template = PromptTemplate(
@@ -215,6 +225,36 @@ def map_extracted_text_to_po_data_with_confidence_score(extracted_text: str) -> 
          Extracted Text:
          {extracted_text}
          
+         The output should include:
+         all fields that can be extracted including "worker accounting" section
+         ignore blank lines.
+         Return a JSON object.
+         """)
+
+    chain = LLMChain(llm=llm, prompt=prompt_template)
+
+    try:
+        response = chain.run(extracted_text)
+        data = json.loads(response)
+        logger.debug("[InvoiceAgent_mapping_with_confidence] structured_data: %s", data)
+    except Exception as e:
+        print(f"Error in mapping extracted text: {e}")
+        return {}
+
+    return data
+
+
+def map_extracted_text_to_po_data_with_confidence_score_orig(extracted_text: str) -> dict:
+    model_schema = {"invoice_id", "vendor", "amount", "date", "purchase_order", "payment_method"}
+    prompt_template = PromptTemplate(
+        input_variables=["extracted_text"],
+        template = """ you are an AI assistant designed to extract structured purchase data from raw extracted text.
+         for amount field please sum all line_items unit_price multiplied by number of units
+         Please parse the following extracted text and output the details in JSON format with "value" and "confidence" (0.0 to 1.0) for each field:
+
+         Extracted Text:
+         {extracted_text}
+
          The output should include:
          - title
          - supplier/vendor
@@ -232,9 +272,18 @@ def map_extracted_text_to_po_data_with_confidence_score(extracted_text: str) -> 
          - purchase_order_id
          - payment_method
          - project_description
+         - timesheet
+         - expense_sheet
+         - worker_accounting extract all fields
+         - work_order_accounting extract all fields
+         - worker
+         - posting_information
+         - personal_information
+         - current_work_order_accounting
          - line_items
          if the vendor name is missing use business_id or client id.
          for amount field please sum all line_items unit_price multiplied by number of units.
+         ignore blank lines.
          If a field is not present, say "MISSING". Return a JSON object.
          """)
 
@@ -267,15 +316,18 @@ def map_extracted_text_to_timecard_data_with_confidence_score(extracted_text: st
          - date_range
          - rate
          - amount
+         - client_name
          - employee_details
-         If a field is not present, say "MISSING". Return a JSON object.
+         extract 
+         If a field is not present, say "MISSING". client_name maybe extracted from first row first column get it from first row first column. Return a JSON object.
          """)
 
     chain = LLMChain(llm=llm, prompt=prompt_template)
 
     try:
         response = chain.run(extracted_text)
-        data = json.loads(response)
+        logger.debug("[InvoiceAgent_mapping_with_confidence] structured_data: %s", response)
+        data = json.loads(response, encoding='utf-8')
         logger.debug("[InvoiceAgent_mapping_with_confidence] structured_data: %s", data)
     except Exception as e:
         print(f"Error in mapping extracted text: {e}")

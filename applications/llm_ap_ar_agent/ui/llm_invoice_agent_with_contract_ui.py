@@ -31,8 +31,8 @@ query = st.text_input("Enter your question for the invoice agent", "Analyze this
 # Upload files
 invoice_file = st.file_uploader("Upload Invoice (PDF or image)", type=["pdf", "png", "jpg"])
 po_file = st.file_uploader("Upload Purchase Order (PDF or image or docx)", type=["pdf", "png", "jpg", "docx"])
-contract_file = st.file_uploader("Upload Contract (DOCX)", type=["docx"])
-rules_file = st.file_uploader("Upload Business Rules (DOCX)", type=["docx"])
+contract_file = st.file_uploader("Upload Contract (PDF or image or docx)", type=["pdf", "png", "jpg", "docx"])
+rules_file = st.file_uploader("Upload policy file (PDF or image or docx)", type=["pdf", "png", "jpg", "docx"])
 statement_of_work_file = st.file_uploader("Upload SOW (DOCX)", type=["docx"])
 uploaded_timecard_file_pdf = st.file_uploader("Upload Time Card pdf", type=["pdf"])
 
@@ -64,7 +64,9 @@ if st.button("Run Agent"):
         st.json(invoice_data)
 
         # PO
-        po_text = process_upload(po_file)
+        po_text = robust_extract_text(po_file)
+        #po_text = process_upload(po_file)
+        st.text_area("Extracted Text from PDF", po_text, height=800)
         po_data = map_extracted_text_to_po_data_with_confidence_score(po_text) if po_text else None  # reuse mapping for PO
         st.subheader("📌 Extracted Fields")
         st.code(po_data, language="json")
@@ -77,7 +79,8 @@ if st.button("Run Agent"):
         st.code(contract_data, language="json")
 
         # Business Rules
-        rules_text = extract_business_rules_from_docx(rules_file)
+        #rules_text = extract_business_rules_from_docx(rules_file)
+        rules_text = robust_extract_text(rules_file)
         rules_data = map_extracted_text_to_business_rules_data_with_confidence_score(rules_text)
         st.subheader("📌 Extracted Fields")
         st.code(rules_data, language="json")
@@ -85,7 +88,7 @@ if st.button("Run Agent"):
         if uploaded_timecard_file_pdf:
             timecard_text = robust_extract_text(uploaded_timecard_file_pdf)
             st.subheader("📋 Extracted Time Card Data")
-            st.text_area("Extracted Text from PDF", timecard_text, height=200)
+            st.text_area("Extracted Text from PDF", timecard_text, height=800)
             timecard_data = map_extracted_text_to_timecard_data_with_confidence_score(timecard_text) if timecard_text else None
             st.subheader("📌 Extracted Fields")
             st.code(timecard_data, language="json")
