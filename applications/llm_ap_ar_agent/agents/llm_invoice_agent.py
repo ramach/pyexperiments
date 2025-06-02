@@ -188,17 +188,21 @@ def map_extracted_text_to_sow_data_with_confidence_score(extracted_text: str) ->
          - roles_responsibilities
          - additional_terms
          - contractor
+         - contracting_company
          - contacts
          - provider_information
          - period
+         - maximum_hours
+         - maximum_authorized_fee
          - line_items
          if the vendor name is missing use business_id or client id.
          for more than one contacts use array and extract each field separately - company, name, phone, email
          if title is missing it is "Statement of Work"
          use "Remit To" field for vendor and vice-versa
          use additional notes for period
+         get contractor from roles_responsibilities
          break description_service into an array of rules for each sentence
-         break line_items into an array of rules for each sentence
+         break line_items into an array of rules. One rule for each sentence
          If a field is not present, say "MISSING". Return a JSON object.
          """)
 
@@ -396,7 +400,7 @@ def run_llm_invoice_agent(query: str, extracted_text: str) -> str:
 def extract_contract_fields_with_llm(contract_text: str) -> Dict:
     from langchain.prompts import PromptTemplate
     prompt_template = PromptTemplate(
-        input_variables=["extracted_text"],
+        input_variables=["contract_text"],
         template = f""" you are an AI assistant designed to extract structured contract from raw extracted text.
          Please parse the following extracted text and output the details in JSON format with "value" and "confidence" (0.0 to 1.0) for each field:
 
@@ -404,8 +408,8 @@ def extract_contract_fields_with_llm(contract_text: str) -> Dict:
          {contract_text}
          
          The output should include:
-         - Client Name
-         - Client Address
+         - client_name
+         - client_address
          - Consulting Firm Name
          - Consulting Firm Address
          - Scope of Work
@@ -415,7 +419,7 @@ def extract_contract_fields_with_llm(contract_text: str) -> Dict:
          If a field is not present, say "MISSING". Return a JSON object.
          """)
     chain = LLMChain(llm=llm, prompt=prompt_template)
-    response = chain.run(contract_text)
+    response = chain.run({"contract_text": contract_text})
 
     try:
         return eval(response)  # Replace with `json.loads()` if result is a valid JSON string

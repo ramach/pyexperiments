@@ -27,13 +27,14 @@ def run_invoice_verification(input_data: Dict[str, Any]):
     invoice_fields = json.dumps(invoice_data)
     logger.debug(f"[run_invoice_verification], {invoice_data}")
     logger.debug(f"[run_invoice_verification], {invoice_fields}")
-    business_rules = input_data.get("business_rules", [])
+    invoice_business_rule = input_data.get("business_rules", [])
+    logger.debug(f"[run_invoice_verification-business-rules], {invoice_business_rule}")
     required_fields = ["invoice_id", "vendor", "date", "amount"]
     missing_fields = [f for f in required_fields if f not in invoice_data or not invoice_data[f]]
 
     compliance_issues = []
-    if business_rules:
-        invoice_business_rule = business_rules[0]
+    if invoice_business_rule:
+        #invoice_business_rule = business_rules[0]
         invoice_business_rule_fields = json.dumps(invoice_business_rule)
         logger.debug(f"[run_invoice_verification], {invoice_business_rule}")
         logger.debug(f"[run_invoice_verification], {invoice_business_rule_fields}")
@@ -50,7 +51,9 @@ def run_invoice_verification(input_data: Dict[str, Any]):
 
 def run_po_matching(input_data: Dict[str, Any]):
     invoice_data = input_data.get("invoice", {})
-    purchase_order_data = input_data.get("purchase_order", {})
+    purchase_order_data = input_data.get("sow", {})
+    logger.debug(f"[run_invoice_verification-invoice], {invoice_data}")
+    logger.debug(f"[run_invoice_verification-SOW], {purchase_order_data}")
     mismatches = []
     if not invoice_data or not purchase_order_data:
         return {"status": "failed", "reason": "Missing invoice or purchase order data"}
@@ -70,6 +73,9 @@ def run_approval_process(input_data: Dict[str, Any]):
     invoice_data = input_data.get("invoice", {})
     business_rules = input_data.get("business_rules", [])
     contract_data = input_data.get("contract", {})
+    logger.debug(f"[run_approval_process], {invoice_data}")
+    logger.debug(f"[run_approval_process], {business_rules}")
+    logger.debug(f"[run_approval_process], {contract_data}")
     issues = []
     if not invoice_data or not contract_data:
         return {"status": "failed", "reason": "Missing invoice or contract data"}
