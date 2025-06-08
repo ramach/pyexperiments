@@ -1,4 +1,5 @@
 from typing import Dict
+import pandas as pd
 
 from langchain.chains import LLMChain
 from langchain.chat_models import ChatOpenAI
@@ -85,6 +86,39 @@ invoice_extraction_prompt = PromptTemplate(
 # Create the LLMChain
 llm = ChatOpenAI(model_name="gpt-4", temperature=0)
 llm_chain = LLMChain(llm=llm, prompt=invoice_extraction_prompt)
+
+def map_extracted_text_to_msa_data_with_confidence_score(extracted_text: str) -> dict:
+    prompt_template =PromptTemplate(
+        input_variables=["extracted_text"],
+        template = """ you are an AI assistant designed to extract structured invoice data from raw extracted text.
+         Please parse the following extracted text and output the details in JSON format with "value" and "confidence" (0.0 to 1.0) for each field:
+
+         Extracted Text:
+         {extracted_text}
+
+         The output should include:
+         - title
+         - summary
+         - rules like services
+         - rule
+         each rule under rules should have a description
+         each rule should have name "name" and its own rules array under "sub-sections"
+         please make sure all sentences are included
+         please keep title simple
+         If a field is not present, say "MISSING". Return a JSON object.
+         """)
+
+    chain = LLMChain(llm=llm, prompt=prompt_template)
+
+    try:
+        response = chain.run(extracted_text)
+        data = json.loads(response)
+        logger.debug("[InvoiceAgent_mapping_with_confidence] structured_data: %s", data)
+    except Exception as e:
+        print(f"Error in mapping extracted text: {e}")
+        return {}
+    return data
+
 
 def map_extracted_text_to_business_rules_data_with_confidence_score(extracted_text: str) -> dict:
     prompt_template =PromptTemplate(
@@ -196,6 +230,8 @@ def map_extracted_text_to_sow_data_with_confidence_score(extracted_text: str) ->
          - maximum_authorized_fee
          - line_items
          if the vendor name is missing use business_id or client id.
+         contracting_company is the name of the company for which the contractor works. name of the vendor company
+         provider_information is in contacts section. it is the name of the company associated with the contractor. Use contracting_company
          for more than one contacts use array and extract each field separately - company, name, phone, email
          if title is missing it is "Statement of Work"
          use "Remit To" field for vendor and vice-versa
@@ -303,6 +339,45 @@ def map_extracted_text_to_po_data_with_confidence_score_orig(extracted_text: str
 
     return data
 
+def map_excel_to_timecard_data_with_confidence_score(excel_file: str) -> dict:
+    extracted_text = pd.read_excel(excel_file, sheet_name=None, engine='openpyxl', usecols='A,B,K,L').get("Apr").to_string()
+    model_schema = {"contractor_name", "manager_name", "amount", "date_range", "hours_worked", "rate_per_hour", "employee_details"}
+    prompt_template = PromptTemplate(
+        input_variables=["extracted_text"],
+        template = """ you are an AI assistant designed to extract structured purchase data from raw extracted text.
+         Please parse the following extracted text and output the details in JSON format with "value" and "confidence" (0.0 to 1.0) for each field:
+
+         Extracted Text:
+         {extracted_text}
+         
+         The output should include:
+         - contractor_name
+         - manager_name
+         - date_range
+         - rate
+         - total_amount
+         - client_name
+         - employee_details
+         - total_hours_worked
+         - hours_worked
+         total_hours_worked is from "Total"  and total_amount from "Total $"
+         add hours worked as array for each day during the date range as an hours_worked in this format day:hours. For missing hours use 0
+         If a field is not present, say "MISSING". client_name maybe extracted from the first row get it from first row - first non-empty word. Return a JSON object.
+         """)
+
+    chain = LLMChain(llm=llm, prompt=prompt_template)
+
+    try:
+        response = chain.run(extracted_text)
+        logger.debug("[InvoiceAgent_mapping_with_confidence] structured_data: %s", response)
+        data = json.loads(response)
+        logger.debug("[InvoiceAgent_mapping_with_confidence] structured_data: %s", data)
+    except Exception as e:
+        print(f"Error in mapping extracted text: {e}")
+        return {}
+    return data
+
+
 def map_extracted_text_to_timecard_data_with_confidence_score(extracted_text: str) -> dict:
     model_schema = {"contractor_name", "manager_name", "amount", "date_range", "hours_worked", "rate_per_hour", "employee_details"}
     prompt_template = PromptTemplate(
@@ -316,15 +391,16 @@ def map_extracted_text_to_timecard_data_with_confidence_score(extracted_text: st
          The output should include:
          - contractor_name
          - manager_name
-         - hours_worked
          - date_range
          - rate
-         - amount
+         - total_amount
          - client_name
          - employee_details
+         - total_hours_worked
          - hours_worked
+         total_hours_worked is from "Total"  and total_amount from "Total $"
          add hours worked as array for each day during the date range as an hours_worked in this format day:hours. For missing hours use 0
-         If a field is not present, say "MISSING". client_name maybe extracted from the first row get it from first row - first word. Return a JSON object.
+         If a field is not present, say "MISSING". client_name maybe extracted from the first row - first non-empty word or not equal to Unnamed. Return a JSON object.
          """)
 
     chain = LLMChain(llm=llm, prompt=prompt_template)

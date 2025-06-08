@@ -91,10 +91,14 @@ uploaded_file_pdf = st.file_uploader("Upload Time Card pdf", type=["pdf"])
 
 
 if uploaded_file:
-    parsed_data = extract_timecard_metadata_generic(uploaded_file)
-
+    timecard_text = pd.read_excel(uploaded_file, sheet_name=None, engine='openpyxl', usecols='A,B,K,L').get("Apr").to_string()
+    timecard_sheets = pd.ExcelFile.sheet_names
+    print(timecard_sheets)
+    st.text_area("sheet names", timecard_sheets, height=200)
+    timecard_data = map_extracted_text_to_timecard_data_with_confidence_score(timecard_text) if timecard_text else None
     st.subheader("📋 Extracted Time Card Data")
-    st.json(parsed_data)
+    st.code(timecard_data, language="json")
+    st.json(timecard_data)
 
 if uploaded_file_pdf:
     timecard_text = robust_extract_text(uploaded_file_pdf)

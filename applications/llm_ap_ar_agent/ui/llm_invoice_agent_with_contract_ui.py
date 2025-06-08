@@ -18,7 +18,7 @@ from agents.llm_invoice_agent import map_extracted_text_to_invoice_data
 from agents.llm_invoice_agent import map_extracted_text_to_po_data_with_confidence_score
 from agents.llm_invoice_agent import map_extracted_text_to_sow_data_with_confidence_score
 from agents.llm_invoice_agent import map_extracted_text_to_business_rules_data_with_confidence_score
-from agents.llm_business_rule_agent import map_rule_text_to_structured
+from agents.llm_invoice_agent import map_extracted_text_to_msa_data_with_confidence_score
 from utils.text_extraction import robust_extract_text
 from agents.llm_invoice_agent import  map_extracted_text_to_timecard_data_with_confidence_score
 
@@ -30,6 +30,7 @@ invoice_file = st.file_uploader("Upload Invoice (PDF or image)", type=["pdf", "p
 po_file = st.file_uploader("Upload Purchase Order (PDF or image or docx)", type=["pdf", "png", "jpg", "docx"])
 contract_file = st.file_uploader("Upload Contract (PDF or image or docx)", type=["pdf", "png", "jpg", "docx"])
 rules_file = st.file_uploader("Upload policy file (PDF or image or docx)", type=["pdf", "png", "jpg", "docx"])
+msa_file = st.file_uploader("Upload msa file (PDF or image or docx)", type=["pdf", "png", "jpg", "docx"])
 statement_of_work_file = st.file_uploader("Upload SOW (PDF or image or docx)", type=["pdf", "png", "jpg","docx"])
 uploaded_timecard_file_pdf = st.file_uploader("Upload Time Card pdf", type=["pdf"])
 
@@ -50,6 +51,7 @@ po_data = None
 contract_data = None
 rules_data = None
 sow_data = None
+msa_data = None
 
 query = st.selectbox("Select a Query", [
     "Analyze this invoice",
@@ -86,13 +88,24 @@ if st.button("Run Agent"):
         st.subheader("📌 Extracted Fields")
         st.code(contract_data, language="json")
 
-        # Business Rules
+        # Policy and Business Rules
         #rules_text = extract_business_rules_from_docx(rules_file)
         rules_text = robust_extract_text(rules_file)
         rules_data = map_extracted_text_to_business_rules_data_with_confidence_score(rules_text)
         st.subheader("📌 Extracted Fields")
         st.code(rules_data, language="json")
         st.json(rules_data)
+
+        # MSA
+        #rules_text = extract_business_rules_from_docx(rules_file)
+        msa_text = robust_extract_text(msa_file)
+        st.subheader("📌 Extracted Fields - msa")
+        st.text_area("Extracted Text from PDF", msa_text, height=800)
+        msa_data = map_extracted_text_to_msa_data_with_confidence_score(msa_text)
+        st.subheader("📌 Extracted Fields - msa")
+        st.code(rules_data, language="json")
+        st.json(rules_data)
+
         if uploaded_timecard_file_pdf:
             timecard_text = robust_extract_text(uploaded_timecard_file_pdf)
             st.subheader("📋 Extracted Time Card Data")

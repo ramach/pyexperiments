@@ -24,8 +24,8 @@ def parse_time_card_excel(file_path: str) -> List[Dict[str, Any]]:
         List[Dict[str, Any]]: A list of time card entries.
     """
     try:
-        df = pd.read_excel(file_path)
-        print(df.head(40))  # Show first 20 rows
+        df = pd.read_excel(file_path, "Mar")
+        print(df.to_string())  # Show first 20 rows
         records = df.to_dict(orient='records')
         return records
     except Exception as e:
@@ -123,6 +123,7 @@ from langchain.tools import tool
 #@tool
 def extract_employee_timecard_info(file_path: str) -> Dict:
     data = pd.read_excel(file_path)
+    data.print()
     """
     Extracts employee and manager timecard metadata from a structured Excel sheet.
     Handles employee name, address, email, phone, manager, hours, rate, and total pay.
@@ -243,7 +244,7 @@ def extract_summary_fields_from_timecard(file_path: str) -> dict:
 
 if __name__ == "__main__":
     parsed_time_card = \
-        parse_time_card_excel("/Users/krishnaramachandran/kasu.ai/pyexperiments/llm_ap_ar_agent/sample-timesheet.xlsx")
+        parse_time_card_excel("/Users/krishnaramachandran/pyexperiments/applications/llm_ap_ar_agent/mockdata/samples/suhas/timecard.xlsx")
     # Convert all datetime/date objects to strings
     clean_data = convert_dates_to_str(parsed_time_card)
     json_output = json.dumps(clean_data, indent=4)
