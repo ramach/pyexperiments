@@ -8,6 +8,59 @@ import pdfplumber
 from utils.pdf_utils import extract_text_from_scanned_pdf
 
 logger = logging.getLogger(__name__)
+def extract_amount(text):
+    # Priority: $amount pattern
+    match = re.search(r"\$\s*(\d+(?:,\d{3})*(?:\.\d{2})?)", text)
+    if match:
+        return int(match.group(1).replace(",", ""))
+
+    # Fallback: number after 'for' or 'amount'
+    match = re.search(r"(?:for|amount)\s*(\d+(?:,\d{3})*)", text, re.IGNORECASE)
+    if match:
+        return int(match.group(1).replace(",", ""))
+
+    # General fallback: any large number
+    match = re.search(r"\b(\d{3,})\b", text)
+    if match:
+        return int(match.group(1).replace(",", ""))
+
+    return None
+
+def regex_extract_fields(text):
+    result = {}
+    patterns = {
+        "invoice_id": r"Invoice ID[:\s]*([A-Z0-9\-]+)",
+        "vendor": r"Vendor[:\s]*(.+)",
+        "amount": r"Amount[:\s]*\$?([\d,.]+)",
+        "date": r"Date[:\s]*([0-9]{4}-[0-9]{2}-[0-9]{2})",
+        "po_number": r"PO[:\s]*([A-Z0-9\-]+)"
+    }
+    for field, pattern in patterns.items():
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            value = match.group(1).strip()
+            if field == "amount":
+                value = float(value.replace(",", ""))
+            result[field] = value
+    return result
+
+def safe_json_parse(output: str):
+    try:
+        start = output.find("{")
+        end = output.rfind("}") + 1
+        json_str = output[start:end]
+        return json.loads(json_str)
+    except Exception:
+        # Fallback: regex key-value parsing
+        data = {}
+        kv_pairs = re.findall(r"(\w+)\s*=\s*([^\n]+)", output)
+        for key, value in kv_pairs:
+            data[key.strip()] = value.strip()
+        return {
+            "warning": "Parsed from plain text, not valid JSON",
+            "data": data,
+            "raw_output": output
+        }
 
 def extract_text_from_pdf(file):
     try:
@@ -157,6 +210,12 @@ import pandas as pd
 from typing import Dict, Any
 import re
 
+def extract_timecard_from_excel(uploaded_file: str, sheet_name: str) -> str:
+    timecard = pd.read_excel(uploaded_file, sheet_name=None, engine='openpyxl', usecols='A,B,K,L')
+    timecard_sheets = timecard.keys()
+    logger.debug(timecard_sheets)
+    return timecard.get(sheet_name).to_string()
+
 def extract_timecard_metadata_generic(file_path: str) -> Dict[str, Any]:
     df = pd.read_excel(file_path, header=None)
     metadata = {}
@@ -216,5 +275,46 @@ def extract_timecard_metadata_generic(file_path: str) -> Dict[str, Any]:
         "hourly_rate": metadata.get("hourly_rate", 0.0),
         "total_amount": metadata.get("total_amount", 0.0),
     }
+
+def create_icl_prompt(extracted_text: str):
+    return f"""
+Example 1:
+Invoice Text:
+Invoice ID: INV-1234
+Vendor: Acme Corp
+Amount: $1234.56
+Date: 2025-04-15
+PO: PO-9876
+
+Extracted JSON:
+{{
+  "invoice_id": "INV-1234",
+  "vendor": "Acme Corp",
+  "amount": 1234.56,
+  "date": "2025-04-15",
+  "po_number": "PO-9876"
+}}
+
+Example 2:
+Invoice Text:
+This invoice is issued by Globex Inc on 2025-01-10.
+Invoice ID: INV-5678
+The amount due is $7890.00. PO: PO-1122
+
+Extracted JSON:
+{{
+  "invoice_id": "INV-5678",
+  "vendor": "Globex Inc",
+  "amount": 7890.00,
+  "date": "2025-01-10",
+  "po_number": "PO-1122"
+}}
+
+Now extract JSON for this:
+Invoice Text:
+{extracted_text}
+
+Respond with JSON only.
+"""
 
 

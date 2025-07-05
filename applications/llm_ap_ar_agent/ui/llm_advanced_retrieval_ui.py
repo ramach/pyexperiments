@@ -3,7 +3,7 @@ import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.pdf_retriever_with_image import retrieve_pdf_with_image_ocr
-from agents.llm_invoice_agent import (run_llm_invoice_agent, map_extracted_text_to_invoice_data_with_confidence_score,
+from ..agents.llm_invoice_agent import (run_llm_invoice_agent, map_extracted_text_to_invoice_data_with_confidence_score,
                                       map_extracted_text_to_po_data_with_confidence_score, map_extracted_text_to_invoice_data)
 
 st.title("📄 Invoice & Purchase Order LLM Agent")

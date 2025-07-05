@@ -362,11 +362,10 @@ def map_excel_to_timecard_data_with_confidence_score(excel_file: str) -> dict:
          - hours_worked
          total_hours_worked is from "Total"  and total_amount from "Total $"
          add hours worked as array for each day during the date range as an hours_worked in this format day:hours. For missing hours use 0
-         If a field is not present, say "MISSING". client_name maybe extracted from the first row get it from first row - first non-empty word. Return a JSON object.
+         If a field is not present, say "MISSING". client_name is second token after Unnamed. Return a JSON object.
          """)
 
     chain = LLMChain(llm=llm, prompt=prompt_template)
-
     try:
         response = chain.run(extracted_text)
         logger.debug("[InvoiceAgent_mapping_with_confidence] structured_data: %s", response)

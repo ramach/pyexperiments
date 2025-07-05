@@ -1,0 +1,5 @@
+{"prompt": "Validate invoice INV001 with amount $1000", "response": "Invoice INV001 is valid."}
+{"prompt": "Validate invoice INV002 with amount $20000", "response": "Invoice INV002 exceeds max allowed amount."}
+{"prompt": "What is the vendor for invoice INV003?", "response": "The vendor for invoice INV003 is ABC Corp."}
+{"prompt": "Process payment for invoice INV004", "response": "Payment for invoice INV004 has been initiated."}
+{"prompt": "Is invoice INV005 compliant with policy?", "response": "Invoice INV005 is compliant with policy."}
