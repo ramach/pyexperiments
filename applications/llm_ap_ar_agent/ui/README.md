@@ -216,3 +216,6 @@ Or a standalone RAG module with LangChain or plain Python?
 
 Let me know your preferred direction and I’ll start with batch processing or RAG first.
 ```
+
+applications
+

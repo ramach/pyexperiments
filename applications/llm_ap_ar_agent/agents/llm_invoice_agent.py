@@ -186,6 +186,7 @@ def map_extracted_text_to_invoice_data_with_confidence_score(extracted_text: str
          if the vendor name is missing use business_id or client id.
          if invoice_title is missing it is "Invoice"
          use "Remit To" field for vendor and vice-versa
+         amount or "total amount" refer to same
          split vendor and bill_to fields into name, address, phone no and email on separate lines
          use additional notes for period
          payment_method should be available as a field else say "MISSING"
@@ -222,6 +223,7 @@ def map_extracted_text_to_sow_data_with_confidence_score(extracted_text: str) ->
          - roles_responsibilities
          - additional_terms
          - contractor
+         - vendor
          - contracting_company
          - contacts
          - provider_information

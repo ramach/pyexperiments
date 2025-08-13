@@ -6,6 +6,7 @@ import sys
 from dotenv import load_dotenv
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.text_extraction import extract_text_from_pdf, safe_json_parse, regex_extract_fields
+from utils.inference_utils import load_finetuned_model
 load_dotenv()
 MODEL_DIR = "./models/output_lora_tiny_mapping"
 
@@ -15,8 +16,9 @@ st.title("📄 FLAN-based Invoice Field Extractor")
 # Load model + tokenizer
 @st.cache_resource
 def load_flan_model():
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
-    model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_DIR)
+    #tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
+    #model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_DIR)
+    model,tokenizer = load_finetuned_model(lora_path="./models/output_lora_tiny_mapping")
     hf_pipe = pipeline(
         "text2text-generation",
         model=model,
@@ -41,13 +43,6 @@ def create_mapping_prompt(extracted_text: str):
 invoice Text:
 {extracted_text}
 
-Example response:
-{{
-  "invoice_id": "INV-001",
-  "vendor": "Acme Corp",
-  "amount": 1234.56,
-  "date": "2025-04-15"
-}}
 If a field is not present, say "MISSING". invoice_id is same as invoice_number, Respond with JSON only. No additional text.
 """
 

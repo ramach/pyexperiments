@@ -1,7 +1,7 @@
 
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
-import openai
+from openai import OpenAI
 import json
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
@@ -55,12 +55,12 @@ Only return valid JSON. If something is missing, return null for that field.
 
 \n\nInvoice Text:\n{text}\n\nJSON:
 """
-    response = openai.ChatCompletion.create(
+    response = OpenAI().chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": prompt}],
         temperature=0,
     )
-    return json.loads(response["choices"][0]["message"]["content"])
+    return json.loads(response.choices[0].message.content)
 
 def extract_label_value_block(text, field_aliases=FIELD_ALIASES, threshold=0.75):
     lines = [l.strip() for l in text.split("\n") if l.strip()]
