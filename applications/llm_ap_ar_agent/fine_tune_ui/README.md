@@ -380,6 +380,79 @@ A:
 
 The adapter reached near-zero loss and produced correct JSON extractions on unseen invoices — a good sign.
 
+### Q11: What are attention metrics?
+A:
+Attention metrics refer to various measurements of how and where the model is focusing during the self-attention computations in a transformer.
+The most common ones include:
+
+#### Attention weights:
+The raw softmax values in each attention head. These show what tokens the model is attending to for each token.
+
+#### Attention entropy:
+A measure of focus vs. spread. Lower entropy → the attention is highly focused (peaky).
+Higher entropy → more diffuse attention (more spread out across tokens).
+
+#### Sparsity / Concentration:
+How many tokens are above a threshold of attention weight (e.g., top-5 attention targets). You can track how this changes during training.
+
+#### Head importance:
+Quantifies how critical each attention head is to the model’s predictions. Some heads specialize in certain tasks (e.g., structure, coreference, math).
+
+### Q12: Why are attention metrics useful during SGD training?
+A:
+They help:
+
+#### Debug learning: 
+Is the model learning to focus on relevant tokens (e.g., invoice fields like "Due Date")?
+
+#### Track convergence: 
+Sharp attention peaks can indicate confident predictions as the model trains.
+
+#### Diagnose overfitting: 
+Overly sharp attention (low entropy) might suggest memorization.
+
+#### Understand behavior: 
+Helps you explain what the model is learning, e.g., whether line-item tokens are grouped consistently.
+
+### Q13: How do I compute attention metrics in practice?
+A:
+In PyTorch/Transformers:
+
+Use the $output_attentions=True$ flag in our model's forward pass:
+
+``` python
+outputs = model(input_ids, attention_mask=mask, output_attentions=True)
+attentions = outputs.attentions  # List of tensors: [num_layers][batch, heads, q_len, k_len]
+```
+#### Compute entropy per head per layer:
+
+``` python
+import torch.nn.functional as F
+entropy = -torch.sum(att * torch.log(att + 1e-9), dim=-1)  # shape: [batch, heads, q_len]
+
+```
+
+#### Visualize:
+
+1. Use matplotlib or seaborn to plot attention maps.
+
+2. Track entropy trend per epoch (via TensorBoard or Weights & Biases).
+
+### Q14: Do I need to monitor attention metrics during LoRA fine-tuning?
+A:
+Not always, but it's very helpful if:
+
+1. if unsure your LoRA adapter is learning meaningful mappings.
+
+2. loss is flattening but outputs are not improving.
+
+You want to analyze which fields (e.g., amount, due date) are getting more attention as training progresses.
+
+#### In our case:
+
+1. During extraction (mapping) fine-tuning, watching whether attention shifts toward "Amount", "Invoice Date", "Bill To" etc. would confirm learning.
+
+2. For toolchain reasoning, checking if attention flows across fields (e.g., amount ↔ terms) could reveal logic development.
 
 
 ## 📚 References
