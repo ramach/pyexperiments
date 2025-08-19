@@ -455,6 +455,69 @@ You want to analyze which fields (e.g., amount, due date) are getting more atten
 2. For toolchain reasoning, checking if attention flows across fields (e.g., amount ↔ terms) could reveal logic development.
 
 
+### Q14: What are Adapters in PEFT / LoRA Fine-Tuning?
+#### What is an Adapter?
+An adapter in the context of PEFT (Parameter-Efficient Fine-Tuning) is a small neural module injected into a frozen pre-trained model to learn task-specific behavior without modifying the original model weights.
+
+Think of it like a “sidecar” network that tweaks the model's behavior without retraining the whole thing.
+ 
+#### What does an Adapter contain?
+
+In the case of LoRA (Low-Rank Adaptation) adapters:
+
+Each adapter contains two low-rank matrices (A and B) per target layer (usually attention + feedforward).
+
+During fine-tuning, instead of updating the full weight W, LoRA learns a delta:
+
+$W_{LoRA} = W+α⋅B⋅A$
+These low-rank deltas (B·A) are stored in the adapter checkpoint, while W (the full model) remains frozen.
+
+#### Q: Where do adapters sit inside the model?
+They are injected into specific linear layers — usually:
+
+Attention projections: q_proj, v_proj, etc.
+
+Feed-forward layers: mlp.down_proj, mlp.up_proj, etc.
+
+We configure which layers to inject into using the target_modules parameter.
+
+#### What’s saved in an adapter checkpoint?
+
+safetensors or .bin file that includes:
+
+The learned weights for A and B per modified layer.
+
+PEFT configuration: rank (r), alpha, dropout, target layers, base model name, etc.
+
+You load it with the base model frozen, and it “activates” the learned task behavior.
+
+#### Q: Why use adapters (vs full fine-tuning)?
+| Full Fine-Tune           | LoRA Adapter Fine-Tune |
+|--------------------------|-----------------------
+| Billions of para ms      | Only ~0.1–2% of params |
+| High GPU RAM required    | Can train on 1 GPU |
+| Slow training	|     Much faster |
+| Overwrites base model	| Reusable + composable |
+
+✅ You can train multiple adapters (e.g., extraction_adapter, approval_adapter, etc.)
+✅ You can swap them in/out at runtime — perfect for your use case!
+
+#### How do I use multiple adapters?
+You can:
+
+Load base model once
+
+Load each adapter separately via PeftModel.from_pretrained()
+
+Or, use model.load_adapter(path, adapter_name="extract") to hot-swap
+
+⚠️ If you want to run both adapters at once, use merge_and_unload():
+
+``` python
+model.merge_and_unload()
+```
+This bakes adapter weights into the base model temporarily.
+
 ## 📚 References
 
 - [LoRA Paper](https://arxiv.org/abs/2106.09685)
