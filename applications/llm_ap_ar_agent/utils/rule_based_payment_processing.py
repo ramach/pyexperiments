@@ -95,7 +95,7 @@ def _method_requirements_ok(method: str, payload: dict) -> tuple[bool, list[str]
 
     return (len(missing) == 0, missing)
 
-def run_payment_processing(json_input: str, context: dict | None = None):
+def run_rule_based_payment_processing(json_input: str, context: dict | None = None):
     """
     Payment scheduling & validation.
     Preconditions (enforced here):

@@ -53,7 +53,7 @@ def _uniq_stable(seq):
             out.append(x)
     return out
 
-def run_approval_process(json_input: str, context: dict | None = None):
+def run_rule_based_approval_process(json_input: str, context: dict | None = None):
     """
     Section 11: Approval policy
     - Always Finance Maker -> Finance Checker first
@@ -140,12 +140,14 @@ def run_approval_process(json_input: str, context: dict | None = None):
     # Simple SLA suggestion (you can tune this)
 
     return policy
-
+'''
 res = run_approval_process(
     json.dumps(parsed_invoice),
     context={
         "has_exceptions": True,
         "external_approvals": {"vendor": "pending", "po": "approved", "sow": "required", "contract": "approved"}
     }
+
 )
+'''
 
