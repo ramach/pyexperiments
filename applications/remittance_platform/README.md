@@ -100,7 +100,7 @@ Ledger/Posted (accounting truth)
 
 ### Recommended: maintain a wallet_transaction table that is derived from ledger events
 
-```python
+``` python
 
 transaction_id, type (TOPUP_CARD, TOPUP_BANK, WITHDRAWAL, FX_CONVERSION, FEE)
 
@@ -144,7 +144,7 @@ full-text search on searchable_text (Postgres FTS)
 
      3. Wallet balance updates in real-time via event
 
-```txt
+``` txt
 B) Debit/Credit card top-up
 
 Best practice
@@ -203,7 +203,7 @@ or reserve a rolling amount for card-funded balances (risk policy)
 
 ### Ledger postings (simple, robust pattern)
 
-```txt
+``` txt
 
 Assume each wallet currency is a liability account. Use a clearing account for in-flight.
 
@@ -347,7 +347,7 @@ Statements (CSV first, then PDF)
 
 ### Service map and responsibilities
 
-```txt
+``` txt
 wallet-api (BFF / public API)
 
 Auth (Keycloak OIDC), user-facing endpoints
@@ -434,10 +434,10 @@ audit timeline
 ```
 
 ##### Transaction history
-```mermaid
+``` txt
 GET /v1/wallets/me/transactions?currency=USD&type=TOPUP_CARD&status=COMPLETED&from=2026-01-01&to=2026-01-23&q=uber&limit=50&cursor=...
 ```
-```json
+``` json
 {
   "items": [
     {
@@ -460,12 +460,12 @@ GET /v1/wallets/me/transactions?currency=USD&type=TOPUP_CARD&status=COMPLETED&fr
 ```nginx
 POST /v1/wallets/me/bank-accounts
 ```
-```json
+``` json
 {"bank_account_id":"ba_123","status":"PENDING_VERIFICATION"}
 ```
 
 #### Internal event model (Kafka/RabbitMQ topics)
-``` mermaid
+``` txt
 Use an outbox table (see schema) and publish events reliably.
 
 Recommended topics
@@ -496,7 +496,7 @@ ledger.posted (journal entry posted in Fineract)
 ```
 #### Database schema draft (Postgres)
 
-``` mermaid
+``` txt
 This assumes wallet-core owns holds and tx-history is a derived read model.
 
 Core: wallets & accounts
