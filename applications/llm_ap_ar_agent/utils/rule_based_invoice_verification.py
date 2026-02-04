@@ -1,6 +1,4 @@
 # ---------- Invoice Validation (rules-based) ----------
-from __future__ import annotations
-
 import json, re
 from datetime import datetime, timezone, timedelta
 
@@ -205,7 +203,7 @@ def _run_invoice_verification(payload: dict, context: dict | None = None) -> dic
     }
 
 
-def run_rule_based_invoice_verification(json_input: str):
+def run_invoice_verification(json_input: str):
     """Backwards-compatible entrypoint (string in, dict out)."""
     payload = json.loads(json_input) if isinstance(json_input, str) else json_input
     # You can weave context here if your pipeline sets it (e.g., global registry):

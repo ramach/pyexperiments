@@ -465,7 +465,7 @@ POST /v1/wallets/me/bank-accounts
 ```
 
 #### Internal event model (Kafka/RabbitMQ topics)
-```mermaid
+``` mermaid
 Use an outbox table (see schema) and publish events reliably.
 
 Recommended topics
@@ -496,13 +496,13 @@ ledger.posted (journal entry posted in Fineract)
 ```
 #### Database schema draft (Postgres)
 
-```mermaid
+``` mermaid
 This assumes wallet-core owns holds and tx-history is a derived read model.
 
 Core: wallets & accounts
 
 ```
-```sql
+``` sql
 CREATE TABLE wallet (
   wallet_id        TEXT PRIMARY KEY,
   customer_id      TEXT NOT NULL UNIQUE,
@@ -609,7 +609,7 @@ CREATE INDEX idx_outbox_unpublished ON outbox_event(published_at) WHERE publishe
 ```
 #### State machines + safe retries
 A) Card top-up state machine
-```txt
+``` txt
 States: CREATED → PENDING → COMPLETED | FAILED | CANCELLEDFlow
 
 CREATED: intent created (idempotency enforced)
@@ -999,7 +999,7 @@ wallet-core, ledger-adapter, topup-service, payout-service, etc.
 It’s doable, but you’ll spend more time on plumbing.
 
 ##### MVP-0 data model (minimal tables)
-```txt
+``` txt
 wallet(wallet_id, customer_id, default_currency, status, created_at)
 
 wallet_account(wallet_account_id, wallet_id, currency, ledger_account_ref, status)

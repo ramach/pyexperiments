@@ -10,9 +10,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from dotenv import load_dotenv
 load_dotenv()
 
-from utils.rule_based_invoice_approval import run_rule_based_approval_process
-from utils.rule_based_invoice_verification import run_rule_based_invoice_verification
-from utils.rule_based_payment_processing import run_rule_based_payment_processing
+from rule_based_invoice_approval import run_rule_based_approval_process
+from rule_based_invoice_verification import run_rule_based_invoice_verification
+from rule_based_payment_processing import run_rule_based_payment_processing
 
 #from rule_based_invoice_approval import run_rule_based_approval_process
 #from rule_based_invoice_verification import run_rule_based_invoice_verification
