@@ -1,14 +1,25 @@
 from fastapi import FastAPI, Depends, Header, HTTPException, Response
 from sqlalchemy.orm import Session
-from decimal import Decimal
 from typing import Optional
 import csv
 import io
+import os
+
+from dotenv import load_dotenv
+load_dotenv()
 
 from .db import get_db
 from . import models, schemas
 from .utils import new_id, mask_account
 from .security import require_internal_api_key
+
+from .routes_transactions import router as tx_router
+from .routes_topups_api import router as topups_router
+
+app = FastAPI(title="Remit Wallet MVP API")
+app.include_router(tx_router)
+app.include_router(topups_router)
+
 from .services import (
     ensure_wallet_account, get_posted_balance, get_reserved_balance,
     create_topup_completed, create_withdrawal, finalize_withdrawal
@@ -109,26 +120,64 @@ def bank_topup_instructions(wallet_id: str, currency: str = "USD"):
         "note": "Include reference to credit your wallet."
     }
 
+from .routes_topup import bank_transfer_topup
+
+from sqlalchemy.exc import IntegrityError
+
 @app.post("/internal/inbound-credits", dependencies=[Depends(require_internal_api_key)])
 def ingest_inbound_credit(payload: schemas.InboundCredit, db: Session = Depends(get_db)):
     wallet = db.query(models.Wallet).filter_by(wallet_id=payload.wallet_id).one_or_none()
     if not wallet:
         raise HTTPException(404, "Wallet not found")
 
-    # Dedupe by rail_tx_id reference (simple)
+    # optional: quick pre-check (fast path)
     existing = db.query(models.WalletTransaction).filter_by(reference=payload.rail_tx_id).one_or_none()
     if existing:
-        return {"status": "DUPLICATE_IGNORED", "tx_id": existing.tx_id}
+        return {"status": "DUPLICATE_IGNORED", "tx_id": existing.tx_id, "tx_status": existing.status.value}
 
-    tx = create_topup_completed(
-        db,
-        wallet_id=payload.wallet_id,
-        currency=payload.currency,
-        amount=payload.amount,
-        reference=payload.rail_tx_id
-    )
-    db.commit()
-    return {"status": "OK", "tx_id": tx.tx_id}
+    try:
+        tx = bank_transfer_topup(
+            db=db,
+            wallet_id=payload.wallet_id,
+            amount=payload.amount,
+            currency=payload.currency,
+            sender_name=None,
+            sender_bank=None,
+            reference=payload.reference,
+            idempotency_key=payload.rail_tx_id,   # ensure you pass the same value used as reference
+        )
+        db.commit()
+        return {"status": "OK", "tx_id": tx.tx_id, "tx_status": tx.status.value}
+
+    except IntegrityError:
+        # someone already inserted the same reference (race/retry)
+        db.rollback()
+        existing = db.query(models.WalletTransaction).filter_by(reference=payload.rail_tx_id).one_or_none()
+        if existing:
+            return {"status": "DUPLICATE_IGNORED", "tx_id": existing.tx_id, "tx_status": existing.status.value}
+        # if we still can't find it, re-raise so you notice
+        raise
+
+@app.post("/internal/inbound-credits_old", dependencies=[Depends(require_internal_api_key)])
+def ingest_inbound_credit_old(payload: schemas.InboundCredit, db: Session = Depends(get_db)):
+    wallet = db.query(models.Wallet).filter_by(wallet_id=payload.wallet_id).one_or_none()
+    if not wallet:
+        raise HTTPException(404, "Wallet not found")
+
+    try:
+        tx = bank_transfer_topup(
+            db=db,
+            wallet_id=payload.wallet_id,
+            amount=payload.amount,
+            currency=payload.currency,
+            sender_name=None,
+            sender_bank=None,
+            reference=payload.rail_tx_id,
+            idempotency_key=payload.rail_tx_id,
+        )
+        return {"status": "OK", "tx_id": tx.tx_id, "tx_status": tx.status.value}
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 # -------- Slice 4: Withdrawals + internal callback --------
 

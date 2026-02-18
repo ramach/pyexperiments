@@ -1,6 +1,6 @@
 ## Target architecture (wallet-preliminary)
 
-```txt
+``` txt
 Core components
 
 1) Channels
@@ -1342,3 +1342,138 @@ script.py.mako
 versions/
 0001_init.py
 ```
+
+#### Use Fineract as “Ledger-of-Record” via Journal Entries
+
+What you keep locally (your wallet DB)
+
+1. Wallet, bank_account, withdrawal, wallet_transaction (for UI/history)
+
+2. Idempotency keys + request logs
+
+3. A lightweight “posting status” table to track what was posted to Fineract
+
+What Fineract does
+
+1. Chart of Accounts (COA)
+
+2. Double-entry posting (debits/credits)
+
+3. Trial balance / GL reporting, accounting closures, audit expectations
+
+Fineract exposes accounting endpoints including journal entries (“Create Balanced Journal Entries”, “List Journal Entries”).
+
+1. Mapping for bank transfer top-up (double-entry)
+
+When a customer tops up USD 100:
+
+1. Debit: Settlement / Bank clearing (asset) 100
+
+2. Credit: Customer wallet liability (liability) 100
+
+You create a balanced journal entry in Fineract with:
+
+1. officeId (or default office)
+
+2. transactionDate
+
+3. credits + debits lines
+
+4. a reference / “externalId” / “transactionIdentifier” for idempotency (depends on your Fineract distribution)
+
+This is exactly the conceptual flow used in Fineract accounting/journal entries.
+
+#### Ledger Service (Fineract)
+
+A) Keep existing wallet tables as the channel layer
+
+…and add a ledger_postings table:
+
+1. posting_id
+
+2. wallet_tx_id
+
+3. ledger_provider = “fineract”
+
+4. provider_ref
+
+status = PENDING / POSTED / FAILED
+
+5. last_error
+
+6. timestamps
+
+B) On /v1/topups/bank-transfer:
+
+1. Write wallet_transaction locally (status = PENDING_LEDGER)
+
+2. Post journal entry to Fineract (idempotent key = tx_id)
+
+3. If success → mark local tx COMPLETED + ledger_postings POSTED
+
+4. If failure → local tx stays PENDING_LEDGER and can be retried
+
+This gives:
+
+1. Strong audit trail
+
+2. Retry safety
+
+3. Clear separation between channel UX and accounting truth
+
+##### Target end-state
+
+``` txt
+wallet DB remains the “channel layer”
+
+user-visible transactions, workflow states, idempotency
+
+retry queue / posting status
+
+UI & APIs stay fast and simple
+
+Fineract becomes the accounting truth
+
+COA + GL reporting
+
+“double entry” for every wallet movement
+
+audit trail in Fineract’s journal entries
+
+```
+
+##### Minimal ledger_service module structure
+
+``` python
+api/app/ledger/
+  __init__.py
+  config.py
+  fineract_client.py
+  ledger_service.py
+  models.py   # (optional) provider posting table models
+
+```
+
+##### Ledger Service Table
+
+Add a “posting status” table in your wallet DB
+
+Add ledger_posting table that tracks:
+
+1. wallet_tx_id
+
+2. provider (“fineract”)
+
+3. provider_ref (journalEntryId / resourceId)
+
+   status (PENDING/POSTED/FAILED)
+
+4. last_error
+
+This gives:
+
+1. safe retries
+
+2. visibility in UI
+
+3. audit trail

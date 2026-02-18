@@ -5,6 +5,33 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from .db import Base
 
+class LedgerPostingStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    POSTED = "POSTED"
+    FAILED = "FAILED"
+
+class LedgerProvider(str, enum.Enum):
+    FINERACT = "FINERACT"
+
+class LedgerPosting(Base):
+    __tablename__ = "ledger_posting"
+
+    ledger_posting_id = Column(String, primary_key=True)
+    wallet_tx_id = Column(String, ForeignKey("wallet_transaction.tx_id"), nullable=False, unique=True)
+
+    provider = Column(String, nullable=False, default="FINERACT")  # FINERACT, etc.
+    provider_ref = Column(String, nullable=True)                  # Fineract transactionId
+    status = Column(Enum(LedgerPostingStatus), nullable=False, default=LedgerPostingStatus.PENDING)
+
+    request_json = Column(Text, nullable=True)
+    response_json = Column(Text, nullable=True)
+    last_error = Column(Text, nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    __table_args__ = (Index("idx_ledger_posting_status", "status", "created_at"),)
+
 class WalletStatus(str, enum.Enum):
     ACTIVE = "ACTIVE"
     SUSPENDED = "SUSPENDED"

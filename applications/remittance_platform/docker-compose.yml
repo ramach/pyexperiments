@@ -1,0 +1,110 @@
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: wallet
+      POSTGRES_USER: wallet
+      POSTGRES_PASSWORD: wallet
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wallet -d wallet -h localhost"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  api:
+    build: ./api
+    volumes:
+      - ./api:/app
+    environment:
+      DATABASE_URL: postgresql+psycopg2://wallet:wallet@db:5432/wallet
+      API_KEY_INTERNAL: dev-internal-key
+      PYTHONPATH: /app
+      FINERACT_BASE_URL: http://host.docker.internal:8080/fineract-provider
+      FINERACT_TENANT: default
+      FINERACT_USER: mifos
+      FINERACT_PASSWORD: password
+      FINERACT_OFFICE_ID: "1"
+      FINERACT_SETTLEMENT_GL_ID: "1"      # replace with real id
+      FINERACT_WALLET_LIAB_GL_ID: "2"     # replace with real id
+      FINERACT_GL_SETTLEMENT_USD: "110001"
+      FINERACT_GL_WALLET_LIAB_USD: "210001"
+
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  ui:
+    build: ./ui
+    environment:
+      API_BASE_URL: http://api:8000
+      INTERNAL_API_KEY: dev-internal-key
+    depends_on:
+      - api
+    ports:
+      - "8501:8501"
+
+  fineractmysql:
+    image: mariadb:10.11
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: fineract_tenants
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - fineract_mysql_data:/var/lib/mysql
+      - ./fineract/mysql-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: [ "CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 -uroot -proot --silent" ]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+
+
+  fineract:
+    image: apache/fineract:latest
+    depends_on:
+      fineractmysql:
+        condition: service_healthy
+    environment:
+      # Local dev over HTTP (OK for local only)
+      FINERACT_SERVER_SSL_ENABLED: "false"
+      FINERACT_SERVER_PORT: "8080"
+
+      # Tenant store (fineract_tenants) connection pool
+      FINERACT_HIKARI_DRIVER_SOURCE_CLASS_NAME: "org.mariadb.jdbc.Driver"
+      FINERACT_HIKARI_JDBC_URL: "jdbc:mariadb://fineractmysql:3306/fineract_tenants"
+      FINERACT_HIKARI_USERNAME: "root"
+      FINERACT_HIKARI_PASSWORD: "root"
+
+      # IMPORTANT: default tenant DB provisioning (fineract_default)
+      FINERACT_DEFAULT_TENANTDB_HOSTNAME: "fineractmysql"
+      FINERACT_DEFAULT_TENANTDB_PORT: "3306"
+      FINERACT_DEFAULT_TENANTDB_UID: "root"
+      FINERACT_DEFAULT_TENANTDB_PWD: "root"
+      FINERACT_DEFAULT_TENANTDB_NAME: "fineract_default"
+      FINERACT_DEFAULT_TENANTDB_IDENTIFIER: "default"
+      FINERACT_DEFAULT_TENANTDB_DESCRIPTION: "Default Tenant"
+      FINERACT_DEFAULT_TENANTDB_TIMEZONE: "UTC"
+
+      # optional
+      FINERACT_NODE_ID: "1"
+    ports:
+      - "8080:8080"
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/fineract-provider/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      retries: 90
+
+volumes:
+  pgdata:
+  fineract_mysql_data:
+

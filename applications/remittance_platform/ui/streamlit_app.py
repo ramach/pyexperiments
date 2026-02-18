@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import requests
 import streamlit as st
@@ -110,3 +112,73 @@ st.subheader("8) Download statement CSV")
 if st.button("Get statement.csv link"):
     st.write(f"{API_BASE}/v1/wallets/{wallet_id}/statement.csv")
     st.info("Open the link in a browser to download. You can also curl it.")
+
+import requests
+import streamlit as st
+
+def api_post(path: str, payload: dict):
+    base = st.secrets.get("API_BASE_URL", "http://api:8000")
+    r = requests.post(f"{base}{path}", json=payload, timeout=30)
+    r.raise_for_status()
+    return r.json()
+
+def api_get(path: str, params: dict | None = None):
+    base = st.secrets.get("API_BASE_URL", "http://api:8000")
+    r = requests.get(f"{base}{path}", params=params or {}, timeout=30)
+    r.raise_for_status()
+    return r.json()
+st.header("Bank Transfer Top-up")
+
+with st.form("bank_topup_form"):
+    wallet_id = st.text_input("Wallet ID", value="")
+    amount = st.number_input("Amount", min_value=0.01, value=100.00, step=10.0)
+    currency = st.selectbox("Currency", ["USD", "EUR", "GBP", "INR"])
+    sender_name = st.text_input("Sender name (optional)", value="")
+    sender_bank = st.text_input("Sender bank (optional)", value="")
+    reference = st.text_input("Reference (optional)", value="")
+    idempotency_key = st.text_input("Idempotency key (optional)", value="")
+
+    submitted = st.form_submit_button("Submit top-up")
+
+if submitted:
+    try:
+        payload = {
+            "wallet_id": wallet_id,
+            "amount": str(amount),
+            "currency": currency,
+            "sender_name": sender_name or None,
+            "sender_bank": sender_bank or None,
+            "reference": reference or None,
+            "idempotency_key": idempotency_key or None,
+        }
+        resp = api_post("/v1/topups/bank-transfer", payload)
+        st.success("Top-up successful")
+        st.json(resp)
+    except requests.HTTPError as e:
+        st.error(f"API error: {e.response.status_code} {e.response.text}")
+    except Exception as e:
+        st.error(str(e))
+
+st.divider()
+st.header("Transactions")
+
+wallet_id_tx = st.text_input("Wallet ID for transactions", value=wallet_id or "")
+currency_f = st.selectbox("Filter currency", ["(any)", "USD", "EUR", "GBP", "INR"])
+q = st.text_input("Search", value="")
+limit = st.slider("Limit", 10, 200, 50)
+
+if st.button("Load transactions"):
+    params = {
+        "limit": limit,
+    }
+    if currency_f != "(any)":
+        params["currency"] = currency_f
+    if q.strip():
+        params["q"] = q.strip()
+
+    try:
+        rows = api_get(f"/v1/wallets/{wallet_id_tx}/transactions", params=params)
+        st.write(f"Found {len(rows)} transactions")
+        st.dataframe(rows, use_container_width=True)
+    except requests.HTTPError as e:
+        st.error(f"API error: {e.response.status_code} {e.response.text}")
